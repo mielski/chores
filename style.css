@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+
+:root {
+  --my-luca-color: #29b100;
+  --my-milou-color: #0ef706dc;
+}
+
+.btn {
+  width: 100%;
+}
+
+#progress-luca {
+  background-color: var(--my-luca-color)
+}
+
+#progress-milou {
+  background-color: var(--my-milou-color)
+}
+
+.btn-luca {
+  border-color: var(--my-luca-color);
+  color: var(--my-luca-color);
+}
+
+.btn-luca.active {
+  background-color: var(--my-luca-color);
+  border-color: var(--my-luca-color);
+}
+
+.btn-luca:hover {
+  background-color: var(--my-luca-color);
+}
+
+.btn-milou {
+  border-color: var(--my-milou-color);
+  color: var(--my-milou-color);
+}
+
+.btn-milou.active {
+  background-color: var(--my-milou-color);
+  border-color: var(--my-milou-color);
+}
+
+.btn-milou:hover {
+  background-color: var(--my-milou-color);
+}
+
+/* Add this CSS to your stylesheet */
+.general-task {
+  transition: all 0.3s ease-in-out;
+}
+
+.general-task.active {
+  transform: scale(1.05);
+}
+
+body {
+  position: relative;
+}
