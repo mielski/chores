@@ -56,9 +56,8 @@ const progressBarLuca = document.getElementById("progress-luca");
 const progressBarMilou = document.getElementById("progress-milou");
 const taskButtonsMilou = document.querySelectorAll("table .btn-milou");
 const taskButtonsLuca = document.querySelectorAll("table .btn-luca");
-const taskButtonsGeneral = document.querySelectorAll("table .general-task");
+const taskButtonsGeneral = document.querySelectorAll("table .btn-general-task");
 const buttonReset = document.getElementById("reset");
-
 
 const progressLuca = {
   progressBar: progressBarLuca,
@@ -78,11 +77,11 @@ const progressLuca = {
     if (giveCompliment) {
       this.progressBar.innerText = compliment;
       this._timeOutId = setTimeout(
-        () => (this.progressBar.innerText = progress),
+        () => (this.progressBar.innerText = this.done),
         2000
       );
     } else {
-      this.progressBar.innerText = progress;
+      this.progressBar.innerText = this.done;
     }
   },
 };
@@ -105,56 +104,57 @@ const progressMilou = {
     if (giveCompliment) {
       this.progressBar.innerText = compliment;
       this._timeOutId = setTimeout(
-        () => (this.progressBar.innerText = progress),
+        () => (this.progressBar.innerText = this.done),
         2000
       );
     } else {
-      this.progressBar.innerText = progress;
+      this.progressBar.innerText = this.done;
     }
   },
 };
 
-function storeState(reset=false) {
-    // store state of the buttons to local storage
-    // if reset=true stored false for all states in order to reset the app
-    let isActive;
-    if (reset) {
-      isActive = () => false;
-    } else {
-      isActive = x => x.classList.contains('active');
-    }
+function storeState(reset = false) {
+  // store state of the buttons to local storage
+  // if reset=true stored false for all states in order to reset the app
+  let isActive;
+  if (reset) {
+    isActive = () => false;
+  } else {
+    isActive = (x) => x.classList.contains("active");
+  }
 
-    const data = {
-        milou: [...taskButtonsMilou].map(isActive),
-        luca: [...taskButtonsLuca].map(isActive),
-        general: [...taskButtonsGeneral].map(isActive),
-    };
-    localStorage.setItem('buttonStates', JSON.stringify(data))
+  const data = {
+    milou: [...taskButtonsMilou].map(isActive),
+    luca: [...taskButtonsLuca].map(isActive),
+    general: [...taskButtonsGeneral].map(isActive),
+  };
+  localStorage.setItem("buttonStates", JSON.stringify(data));
 }
 function updateApp() {
   // to be created
 
   const dataTobuttonsMap = new Map([
-    ['milou', taskButtonsMilou],
-    ['luca', taskButtonsLuca],
-    ['general', taskButtonsGeneral]
-  ])
+    ["milou", taskButtonsMilou],
+    ["luca", taskButtonsLuca],
+    ["general", taskButtonsGeneral],
+  ]);
 
-  const data = localStorage.getItem('buttonStates');
+  const data = localStorage.getItem("buttonStates");
   if (!data) {
     // set state and restart
-    storeState()
-    updateApp()
-    return
+    storeState();
+    updateApp();
+    return;
   }
 
   function applyStateToButtonList(buttonNodes, isActiveArray) {
     // sets buttons to active based on state data
 
     isActiveArray.forEach((value, index) => {
-      value ? buttonNodes[index].classList.add('active') : buttonNodes[index].classList.remove('active');
-
-    })
+      value
+        ? buttonNodes[index].classList.add("active")
+        : buttonNodes[index].classList.remove("active");
+    });
   }
 
   // iterate buttons and return 'active' class based on state stored
@@ -165,23 +165,19 @@ function updateApp() {
   }
 
   // for the general buttons, do the conversion of the innerText manually
-  taskButtonsGeneral.forEach( button => {
-    button.innerText = button.classList.contains('active') ?  " 🎉 " : "...";
-  })
-  
+  taskButtonsGeneral.forEach((button) => {
+    button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
+  });
+
   // restore the tasks done for Luca and Milou
-  progressLuca.done = storedButtonStates['luca'].filter(x=>x).length;
+  progressLuca.done = storedButtonStates["luca"].filter((x) => x).length;
   progressLuca.updateProgress();
 
-  progressMilou.done = storedButtonStates['milou'].filter(x=>x).length;;
+  progressMilou.done = storedButtonStates["milou"].filter((x) => x).length;
   progressMilou.updateProgress();
-
-  
 }
 
-
 console.log(taskButtonsGeneral);
-
 
 taskButtonsMilou.forEach((button) => {
   button.addEventListener("click", () => {
@@ -195,15 +191,15 @@ taskButtonsMilou.forEach((button) => {
 });
 
 taskButtonsLuca.forEach((button) => {
-    button.addEventListener("click", () => {
-      let countChange = button.classList.contains("active") ? -1 : 1;
-      button.classList.toggle("active");
-      console.log(countChange);
-      progressLuca.done += countChange;
-      progressLuca.updateProgress(countChange === 1);
-      storeState();
-    });
+  button.addEventListener("click", () => {
+    let countChange = button.classList.contains("active") ? -1 : 1;
+    button.classList.toggle("active");
+    console.log(countChange);
+    progressLuca.done += countChange;
+    progressLuca.updateProgress(countChange === 1);
+    storeState();
   });
+});
 
 taskButtonsGeneral.forEach((button) => {
   button.addEventListener("click", () => {
@@ -214,7 +210,7 @@ taskButtonsGeneral.forEach((button) => {
 });
 
 buttonReset.addEventListener("click", () => {
-  storeState(true)
+  storeState(true);
   updateApp();
 });
 
