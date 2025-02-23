@@ -16,11 +16,11 @@ const complimentjes = [
   "gewoon geweldig! 🏆",
 ];
 const personalTaskNames = [
-  "Vaatwasser inruimen",
-  "Vaatwasser uitruimen",
+  "Vaatwasser in/uit",
   "Koken",
-  "Vuilnis/Papier wegbrengen",
+  "Vuilnis/Papier doen",
   "Kamer opruimen",
+  "Planten water geven",
   "Overig",
   "Joker",
 ];

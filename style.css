@@ -10,8 +10,14 @@
   --my-milou-color: #0ef706dc;
 }
 
+table {
+  font-size: 13px;
+  text-wrap: nowrap;
+}
+
 .btn {
   width: 100%;
+  font-size: 12px;
 }
 
 #progress-luca {
