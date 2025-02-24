@@ -16,11 +16,13 @@ const complimentjes = [
   "gewoon geweldig! 🏆",
 ];
 const personalTaskNames = [
-  "Vaatwasser in/uit",
+  "Vaatwasser",
   "Koken",
   "Vuilnis/Papier doen",
   "Kamer opruimen",
   "Planten water geven",
+  "Was doen / vouwen",
+  "Tafel dekken/afruimen",
   "Overig",
   "Joker",
 ];
@@ -214,12 +216,9 @@ buttonReset.addEventListener("click", () => {
   updateApp();
 });
 
-/*
-Design overview, what kind of operations do I have
 
-update single process bar from a button update
-
-update all from reset button -> set all buttons and update both progress bars separately
-update all from data load -> set all buttons and update both progress bars separately
-*/
+// remove ability to take focus for table buttons
+[...taskButtonsGeneral, ...taskButtonsLuca, ...taskButtonsMilou].forEach(button => {
+  button.setAttribute('tabIndex', -1);
+})
 updateApp();
