@@ -12,6 +12,6 @@ services:
 
 hooks:
   postprovision:
-    shell: sh
+    shell: pwsh
     run: echo "Resources provisioned successfully"
     continueOnError: false
