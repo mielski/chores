@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: household-tracker
+metadata:
+  template: household-tracker@0.0.1-beta
+
+services:
+  web:
+    project: .
+    language: python
+    host: containerapp
+
+hooks:
+  postprovision:
+    shell: sh
+    run: echo "Resources provisioned successfully"
+    continueOnError: false
