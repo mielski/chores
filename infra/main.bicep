@@ -192,10 +192,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 // Output values for use by azd and other tools
+output RESOURCE_GROUP_ID string = resourceGroup().id
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.name
 output AZURE_CONTAINER_APPS_ENVIRONMENT_NAME string = containerAppsEnvironment.name
 output AZURE_CONTAINER_APP_NAME string = containerApp.name
 output AZURE_LOG_ANALYTICS_WORKSPACE_NAME string = logAnalyticsWorkspace.name
 output WEB_URI string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
-output RESOURCE_GROUP_ID string = resourceGroup().id

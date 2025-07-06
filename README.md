@@ -14,6 +14,7 @@ A simple web application for tracking household tasks between family members wit
 ## Architecture
 
 The application consists of:
+
 - **Frontend**: HTML/CSS/JavaScript single-page application
 - **Backend**: Flask API for state management
 - **Storage**: Simple JSON file for state persistence
@@ -24,14 +25,16 @@ The application consists of:
 ### Option 1: Local Development with Docker
 
 1. **Prerequisites**
+
    - Docker Desktop installed and running
    - Git for cloning the repository
 
 2. **Deploy Locally**
+
    ```bash
    # Using PowerShell (Windows)
    .\deploy-local.ps1
-   
+
    # Using Bash (Linux/Mac/WSL)
    chmod +x deploy-local.sh
    ./deploy-local.sh
@@ -44,15 +47,17 @@ The application consists of:
 ### Option 2: Deploy to Azure Container Apps
 
 1. **Prerequisites**
+
    - Azure subscription
    - Azure CLI installed and logged in
    - Azure Developer CLI (azd) installed
 
 2. **Initialize and Deploy**
+
    ```bash
    # Initialize azd (first time only)
    azd init
-   
+
    # Deploy to Azure
    azd up
    ```
@@ -66,10 +71,11 @@ The application consists of:
 To access the app from other devices on your local network:
 
 1. Find your computer's IP address:
+
    ```bash
    # Windows
    ipconfig
-   
+
    # Linux/Mac
    ip addr show  # or ifconfig
    ```
@@ -106,6 +112,7 @@ household-tracker/
 ### State Management
 
 The application stores task state in a JSON format:
+
 ```json
 {
   "milou": [false, false, false, false, false, false, false],
@@ -143,25 +150,28 @@ The application stores task state in a JSON format:
 ### Local Deployment Issues
 
 1. **Docker not running**
+
    ```bash
    # Start Docker Desktop and wait for it to be ready
    docker info
    ```
 
 2. **Port already in use**
+
    ```bash
    # Find what's using port 8080
    netstat -ano | findstr :8080  # Windows
    lsof -i :8080                 # Linux/Mac
-   
+
    # Stop the conflicting service or change the port in deploy script
    ```
 
 3. **Container won't start**
+
    ```bash
    # Check container logs
    docker logs household-tracker
-   
+
    # Check if container is running
    docker ps -a
    ```
@@ -169,6 +179,7 @@ The application stores task state in a JSON format:
 ### Azure Deployment Issues
 
 1. **Authentication errors**
+
    ```bash
    # Login to Azure
    az login
@@ -176,18 +187,20 @@ The application stores task state in a JSON format:
    ```
 
 2. **Resource quota issues**
+
    ```bash
    # Check available regions
    az account list-locations --output table
-   
+
    # Try a different region in azure.yaml
    ```
 
 3. **Deployment failures**
+
    ```bash
    # Check deployment logs
    azd logs
-   
+
    # View resource status in Azure portal
    ```
 
@@ -196,6 +209,7 @@ The application stores task state in a JSON format:
 ### Adding New Tasks
 
 Edit the `personalTaskNames` array in `script.js`:
+
 ```javascript
 const personalTaskNames = [
   "Vaatwasser inruimen",
@@ -208,6 +222,7 @@ const personalTaskNames = [
 ### Changing Colors
 
 Modify CSS variables in `style.css`:
+
 ```css
 :root {
   --my-luca-color: #29b100;

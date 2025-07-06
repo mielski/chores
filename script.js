@@ -59,7 +59,6 @@ const taskButtonsLuca = document.querySelectorAll("table .btn-luca");
 const taskButtonsGeneral = document.querySelectorAll("table .general-task");
 const buttonReset = document.getElementById("reset");
 
-
 const progressLuca = {
   progressBar: progressBarLuca,
   done: 0,
@@ -114,94 +113,98 @@ const progressMilou = {
   },
 };
 
-async function storeState(reset=false) {
-    // store state of the buttons to backend API
-    // if reset=true stored false for all states in order to reset the app
-    try {
-        if (reset) {
-            const response = await fetch('/api/reset', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            const result = await response.json();
-            if (!result.success) {
-                console.error('Failed to reset state:', result.error);
-            }
-        } else {
-            const isActive = x => x.classList.contains('active');
-            const data = {
-                milou: [...taskButtonsMilou].map(isActive),
-                luca: [...taskButtonsLuca].map(isActive),
-                general: [...taskButtonsGeneral].map(isActive),
-            };
-            
-            const response = await fetch('/api/state', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            if (!result.success) {
-                console.error('Failed to save state:', result.error);
-            }
-        }
-    } catch (error) {
-        console.error('Error storing state:', error);
+async function storeState(reset = false) {
+  // store state of the buttons to backend API
+  // if reset=true stored false for all states in order to reset the app
+  try {
+    if (reset) {
+      const response = await fetch("/api/reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const result = await response.json();
+      if (!result.success) {
+        console.error("Failed to reset state:", result.error);
+      }
+    } else {
+      const isActive = (x) => x.classList.contains("active");
+      const data = {
+        milou: [...taskButtonsMilou].map(isActive),
+        luca: [...taskButtonsLuca].map(isActive),
+        general: [...taskButtonsGeneral].map(isActive),
+      };
+
+      const response = await fetch("/api/state", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        console.error("Failed to save state:", result.error);
+      }
     }
+  } catch (error) {
+    console.error("Error storing state:", error);
+  }
 }
 async function updateApp() {
   // Load state from backend API
   try {
-    const response = await fetch('/api/state');
+    const response = await fetch("/api/state");
     const result = await response.json();
-    
+
     if (!result.success) {
-      console.error('Failed to load state:', result.error);
+      console.error("Failed to load state:", result.error);
       return;
     }
-    
+
     const storedButtonStates = result.data;
-    
+
     const dataTobuttonsMap = new Map([
-      ['milou', taskButtonsMilou],
-      ['luca', taskButtonsLuca],
-      ['general', taskButtonsGeneral]
+      ["milou", taskButtonsMilou],
+      ["luca", taskButtonsLuca],
+      ["general", taskButtonsGeneral],
     ]);
 
     function applyStateToButtonList(buttonNodes, isActiveArray) {
       // sets buttons to active based on state data
       isActiveArray.forEach((value, index) => {
         if (buttonNodes[index]) {
-          value ? buttonNodes[index].classList.add('active') : buttonNodes[index].classList.remove('active');
+          value
+            ? buttonNodes[index].classList.add("active")
+            : buttonNodes[index].classList.remove("active");
         }
       });
     }
 
     // iterate buttons and apply stored state
     for (let key in storedButtonStates) {
-      applyStateToButtonList(dataTobuttonsMap.get(key), storedButtonStates[key]);
+      applyStateToButtonList(
+        dataTobuttonsMap.get(key),
+        storedButtonStates[key]
+      );
       console.log(key, storedButtonStates[key]);
     }
 
     // for the general buttons, do the conversion of the innerText manually
-    taskButtonsGeneral.forEach(button => {
-      button.innerText = button.classList.contains('active') ? " 🎉 " : "...";
+    taskButtonsGeneral.forEach((button) => {
+      button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
     });
-    
+
     // restore the tasks done for Luca and Milou
-    progressLuca.done = storedButtonStates['luca'].filter(x => x).length;
+    progressLuca.done = storedButtonStates["luca"].filter((x) => x).length;
     progressLuca.updateProgress();
 
-    progressMilou.done = storedButtonStates['milou'].filter(x => x).length;
+    progressMilou.done = storedButtonStates["milou"].filter((x) => x).length;
     progressMilou.updateProgress();
-    
   } catch (error) {
-    console.error('Error loading state:', error);
+    console.error("Error loading state:", error);
     // Fallback to default state
     progressLuca.done = 0;
     progressLuca.updateProgress();
@@ -210,9 +213,7 @@ async function updateApp() {
   }
 }
 
-
 console.log(taskButtonsGeneral);
-
 
 taskButtonsMilou.forEach((button) => {
   button.addEventListener("click", () => {
@@ -226,15 +227,15 @@ taskButtonsMilou.forEach((button) => {
 });
 
 taskButtonsLuca.forEach((button) => {
-    button.addEventListener("click", () => {
-      let countChange = button.classList.contains("active") ? -1 : 1;
-      button.classList.toggle("active");
-      console.log(countChange);
-      progressLuca.done += countChange;
-      progressLuca.updateProgress(countChange === 1);
-      storeState();
-    });
+  button.addEventListener("click", () => {
+    let countChange = button.classList.contains("active") ? -1 : 1;
+    button.classList.toggle("active");
+    console.log(countChange);
+    progressLuca.done += countChange;
+    progressLuca.updateProgress(countChange === 1);
+    storeState();
   });
+});
 
 taskButtonsGeneral.forEach((button) => {
   button.addEventListener("click", () => {
