@@ -141,6 +141,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           allowedHeaders: ['*']
           allowCredentials: false
         }
+        ipSecurityRestrictions: [
+          {action: 'Allow', name: 'AllowHomeNetwork', description: 'Allows access from home network', ipAddressRange: '188.90.180.102'}
+          {action: 'Deny', name: 'DenyAll', description: 'Deny all other traffic', ipAddressRange: '0.0.0.0/0'}
+        ]
       }
       registries: [
         {
