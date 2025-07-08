@@ -88,13 +88,15 @@ To access the app from other devices on your local network:
 
 ```
 household-tracker/
-├── index.html              # Main HTML file
-├── script.js               # Frontend JavaScript
-├── style.css               # CSS styles
-├── app.py                  # Flask backend API
-├── requirements.txt        # Python dependencies
 ├── Dockerfile             # Container configuration
 ├── azure.yaml             # Azure deployment configuration
+├── src
+│   ├── app.py              # Flask application code
+│   ├── requirements.txt     # Python dependencies
+│   └── static/
+│       ├── index.html      # Main HTML file
+│       ├── script.js        # Frontend JavaScript
+│       └── style.css        # CSS styles
 ├── infra/
 │   ├── main.bicep         # Azure infrastructure as code
 │   └── main.parameters.json

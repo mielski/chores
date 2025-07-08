@@ -63,12 +63,12 @@ def save_state(state):
 @app.route('/')
 def index():
     """Serve the main HTML file"""
-    return send_from_directory('.', 'index.html')
+    return send_from_directory('static', 'index.html')
 
 @app.route('/<path:filename>')
 def static_files(filename):
     """Serve static files (CSS, JS, etc.)"""
-    return send_from_directory('.', filename)
+    return send_from_directory('static', filename)
 
 # API Endpoints
 @app.route('/api/state', methods=['GET'])
@@ -118,7 +118,7 @@ def update_state():
                 'success': False,
                 'error': 'Failed to save state'
             }), 500
-            
+
     except Exception as e:
         logger.error(f"Error updating state: {e}")
         return jsonify({
