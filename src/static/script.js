@@ -98,47 +98,44 @@ class ProgressBar {
 const progressLuca = new ProgressBar(progressBarLuca, totalTasksRequired);
 const progressMilou = new ProgressBar(progressBarMilou, totalTasksRequired);
 
-
 async function storeState(reset = false) {
   // store state of the buttons to backend API
   // if reset=true stored false for all states in order to reset the app
+  let stateData;
+  if (reset) {
+    // alternative implementation, create a new array with false with lengths of states
+    stateData = {
+      milou: Array.from(taskButtonsMilou, () => false),
+      luca: Array.from(taskButtonsLuca, () => false),
+      general: Array.from(taskButtonsGeneral, () => false),
+    };
+  } else {
+    const isActive = (x) => x.classList.contains("active");
+    stateData = {
+      milou: [...taskButtonsMilou].map(isActive),
+      luca: [...taskButtonsLuca].map(isActive),
+      general: [...taskButtonsGeneral].map(isActive),
+    };
+  }
   try {
-    if (reset) {
-      const response = await fetch("/api/reset", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const result = await response.json();
-      if (!result.success) {
-        console.error("Failed to reset state:", result.error);
-      }
-    } else {
-      const isActive = (x) => x.classList.contains("active");
-      const data = {
-        milou: [...taskButtonsMilou].map(isActive),
-        luca: [...taskButtonsLuca].map(isActive),
-        general: [...taskButtonsGeneral].map(isActive),
-      };
+    const response = await fetch("/api/state", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(stateData),
+    });
 
-      const response = await fetch("/api/state", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-      if (!result.success) {
-        console.error("Failed to save state:", result.error);
-      }
+    const result = await response.json();
+    if (!result.success) {
+      console.error("Failed to save state:", result.error);
     }
+    console.log("State stored successfully:", stateData);
   } catch (error) {
     console.error("Error storing state:", error);
   }
 }
+
 async function updateApp() {
   // Load state from backend API
   try {
