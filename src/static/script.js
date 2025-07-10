@@ -59,12 +59,21 @@ const taskButtonsLuca = document.querySelectorAll("table .btn-luca");
 const taskButtonsGeneral = document.querySelectorAll("table .general-task");
 const buttonReset = document.getElementById("reset");
 
-const progressLuca = {
-  progressBar: progressBarLuca,
-  done: 0,
-  required: totalTasksRequired,
-  timeoutId: undefined,
-  updateProgress: function (giveCompliment = false) {
+class ProgressBar {
+  // Class to handle the progress bar updates
+  // It takes an HTML element and the total number of tasks as parameters
+  // It has a method to update the progress bar and optionally show a compliment
+  // It also handles the timeout for showing the compliment
+  constructor(element, totalTasks) {
+    // element: HTML element for the progress bar
+    // totalTasks: total number of tasks to complete (integer)
+    this.progressBar = element;
+    this.done = 0;
+    this.required = totalTasks;
+    this.timeoutId = undefined;
+  }
+
+  updateProgress(giveCompliment = false) {
     const randomIndex = Math.floor(Math.random() * complimentjes.length);
     const compliment = complimentjes[randomIndex];
 
@@ -83,35 +92,12 @@ const progressLuca = {
     } else {
       this.progressBar.innerText = progress;
     }
-  },
-};
+  }
+}
 
-const progressMilou = {
-  progressBar: progressBarMilou,
-  done: 0,
-  required: totalTasksRequired,
-  timeoutId: undefined,
-  updateProgress: function (giveCompliment = false) {
-    const randomIndex = Math.floor(Math.random() * complimentjes.length);
-    const compliment = complimentjes[randomIndex];
+const progressLuca = new ProgressBar(progressBarLuca, totalTasksRequired);
+const progressMilou = new ProgressBar(progressBarMilou, totalTasksRequired);
 
-    const progress =
-      Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
-    this.progressBar.style.width = progress;
-
-    if (this._timeOutId) clearTimeout(this._timeOutId);
-
-    if (giveCompliment) {
-      this.progressBar.innerText = compliment;
-      this._timeOutId = setTimeout(
-        () => (this.progressBar.innerText = progress),
-        2000
-      );
-    } else {
-      this.progressBar.innerText = progress;
-    }
-  },
-};
 
 async function storeState(reset = false) {
   // store state of the buttons to backend API
