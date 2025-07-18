@@ -2,17 +2,23 @@
 Flask backend for Household Task Tracker
 Serves static files and provides REST API for state management
 """
-import json
 import os
+import json
+import logging
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY')
 CORS(app)
 
 # Configuration
