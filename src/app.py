@@ -5,6 +5,7 @@ Serves static files and provides REST API for state management
 import os
 import json
 import logging
+import traceback
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -20,6 +21,12 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
+try:
+    app.config["USERNAME"] = os.environ['USERNAME']
+    app.config["PASSWORD"] = os.environ['PASSWORD']
+except KeyError as e:
+    logger.error(f"No username and/or password environment variables found: {e}")
+    exit(1)
 CORS(app)
 
 # setup Flask-Login
@@ -27,6 +34,26 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+class User(UserMixin):
+    """User class for Flask-Login"""
+    def __init__(self, id):
+        self.id = id
+
+    def is_authenticated(self):
+        return True
+
+    def is_active(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+    
+@login_manager.user_loader
+def load_user(user_id):
+    """checks if user ID can be found and return a user object"""
+    if user_id == app.config["USERNAME"]:
+        return User(id=user_id)
+    return None
 
 # Configuration
 STATE_FILE = os.getenv('STATE_FILE', 'household_state.json')
