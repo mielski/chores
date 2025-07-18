@@ -8,6 +8,7 @@ import logging
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -18,8 +19,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY')
+app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
 CORS(app)
+
+# setup Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
 
 # Configuration
 STATE_FILE = os.getenv('STATE_FILE', 'household_state.json')
