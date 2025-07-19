@@ -7,10 +7,15 @@ import json
 import logging
 import traceback
 
-from flask import Flask, request, jsonify, send_from_directory
+from dotenv import load_dotenv
+from flask import Flask, request, jsonify, send_from_directory, render_template, redirect, url_for
+from flask_bootstrap import Bootstrap5
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from dotenv import load_dotenv
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
+app.config["SECRET_KEY"] = os.getenv('SECRET')
 try:
     app.config["USERNAME"] = os.environ['USERNAME']
     app.config["PASSWORD"] = os.environ['PASSWORD']
@@ -33,6 +38,9 @@ CORS(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# setup Flask-Bootstrap
+bootstrap = Bootstrap5(app)
 
 class User(UserMixin):
     """User class for Flask-Login"""
@@ -98,6 +106,28 @@ def save_state(state):
     except Exception as e:
         logger.error(f"Error saving state: {e}")
         return False
+    
+class LoginForm(FlaskForm):
+    """Form for user login"""
+
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Login')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+        if username == app.config["USERNAME"] and password == app.config["PASSWORD"]:
+            user = User(id=username)
+            login_user(user)
+            return redirect('/')
+        else:
+            return render_template('login.html', form=form, error='Invalid credentials')
+    # Render a simple login form with CSRF token
+    return render_template('login.html', form=form, error=None)
 
 # Serve static files
 @app.route('/')
