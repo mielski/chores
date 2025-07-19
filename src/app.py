@@ -5,13 +5,12 @@ Serves static files and provides REST API for state management
 import os
 import json
 import logging
-import traceback
 
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory, render_template, redirect, url_for
 from flask_bootstrap import Bootstrap5
 from flask_cors import CORS
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
@@ -30,7 +29,7 @@ try:
     app.config["USERNAME"] = os.environ['USERNAME']
     app.config["PASSWORD"] = os.environ['PASSWORD']
 except KeyError as e:
-    logger.error(f"No username and/or password environment variables found: {e}")
+    logger.error(f"No username and/or password environment variables found, terminating application")
     exit(1)
 CORS(app)
 
@@ -116,6 +115,11 @@ class LoginForm(FlaskForm):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Render login page and handle login logic
+    
+    credentials are checked against environment variables
+    If login is successful, user is redirected to the main page
+    """
     form = LoginForm()
     if form.validate_on_submit():
         username = form.username.data
@@ -132,7 +136,7 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
-    """Logout the current user"""
+    """Logout the current user and redirect to login"""
     logout_user()
     return redirect(url_for('login'))
 
