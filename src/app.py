@@ -129,8 +129,15 @@ def login():
     # Render a simple login form with CSRF token
     return render_template('login.html', form=form, error=None)
 
-# Serve static files
+@app.route('/logout')
+@login_required
+def logout():
+    """Logout the current user"""
+    logout_user()
+    return redirect(url_for('login'))
+
 @app.route('/')
+@login_required
 def index():
     """Serve the main HTML file"""
     return send_from_directory('static', 'index.html')
