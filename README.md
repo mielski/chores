@@ -29,6 +29,13 @@ The application consists of:
 
    - Docker Desktop installed and running
    - Git for cloning the repository
+   - create a `.env` file in the root directory with the following content:
+
+     ```plaintext
+     APP_SECRET=your_secret_key
+     APP_USERNAME=your_username
+     APP_PASSWORD=your_password
+     ```
 
 2. **Deploy Locally**
 
