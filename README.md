@@ -63,6 +63,10 @@ The application consists of:
    azd up
    ```
 
+   - Follow the prompts to select the following
+     - resource group and region
+     - app secret, username, and password for authentication
+
 3. **Access the Application**
    - The deployment will provide a public URL
    - Access from any device with internet connection
