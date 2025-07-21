@@ -162,6 +162,16 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           identity: userAssignedIdentity.id
         }
       ]
+      secrets: [
+        {
+          name: 'app-secret'
+          value: appSecret
+        }
+        {
+          name: 'app-password'
+          value: appPassword
+        }
+      ]
     }
     template: {
       containers: [
@@ -179,7 +189,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'SECRET'
-              value: appSecret
+              secretRef: 'app-secret'
             }
             {
               name: 'USERNAME'
@@ -187,7 +197,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'PASSWORD'
-              value: appPassword
+              secretRef: 'app-password'
             }
           ]
           resources: {
