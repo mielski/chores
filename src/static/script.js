@@ -196,7 +196,73 @@ async function updateApp() {
   }
 }
 
-console.log(taskButtonsGeneral);
+// Confetti utility functions
+function createConfetti(options = {}) {
+  const defaults = {
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 },
+    angle: 90,
+    startVelocity: 45,
+    colors: ['#bb0000', '#ffffff', '#00bb00', '#0000bb', '#bbbb00']
+  };
+  
+  const config = { ...defaults, ...options };
+  
+  confetti(config);
+}
+
+function sideConfetti(side = 'both') {
+  const leftConfig = {
+    particleCount: 50,
+    angle: 60,
+    spread: 55,
+    origin: { x: 0, y: 0.6 },
+    startVelocity: 45
+  };
+  
+  const rightConfig = {
+    particleCount: 50,
+    angle: 120,
+    spread: 55,
+    origin: { x: 1, y: 0.6 },
+    startVelocity: 45
+  };
+  
+  if (side === 'left' || side === 'both') {
+    createConfetti(leftConfig);
+  }
+  
+  if (side === 'right' || side === 'both') {
+    createConfetti(rightConfig);
+  }
+}
+
+function celebrationBurst() {
+  // Multiple bursts for celebration
+  createConfetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 }
+  });
+  
+  setTimeout(() => sideConfetti('both'), 250);
+  
+  setTimeout(() => {
+    createConfetti({
+      particleCount: 50,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 }
+    });
+    createConfetti({
+      particleCount: 50,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 }
+    });
+  }, 500);
+}
 
 taskButtonsMilou.forEach((button) => {
   button.addEventListener("click", () => {
@@ -205,6 +271,10 @@ taskButtonsMilou.forEach((button) => {
     console.log(countChange);
     progressMilou.done += countChange;
     progressMilou.updateProgress(countChange === 1);
+    if (countChange === 1) {
+      // Show confetti from sides for Milou
+      sideConfetti('left');
+    }
     storeState();
   });
 });
@@ -216,6 +286,10 @@ taskButtonsLuca.forEach((button) => {
     console.log(countChange);
     progressLuca.done += countChange;
     progressLuca.updateProgress(countChange === 1);
+    if (countChange === 1) {
+      // Show confetti from sides for Luca
+      sideConfetti('right');
+    }
     storeState();
   });
 });
@@ -224,6 +298,10 @@ taskButtonsGeneral.forEach((button) => {
   button.addEventListener("click", () => {
     const isActive = button.classList.toggle("active");
     button.innerText = isActive ? " 🎉 " : "...";
+    if (isActive) {
+      // Big celebration for general tasks
+      celebrationBurst();
+    }
     storeState();
   });
 });
