@@ -7,8 +7,8 @@ services:
       - "8080:8080"
     environment:
       - SECRET=${SECRET}
-      - USERNAME=${APP_USERNAME}
-      - PASSWORD=${APP_PASSWORD}
+      - APP_USERNAME=${APP_USERNAME}
+      - APP_PASSWORD=${APP_PASSWORD}
       - PORT=8080
       - STATE_FILE=/app/data/household_state.json
     env_file:
