@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  household-tracker:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SECRET=${SECRET}
+      - USERNAME=${APP_USERNAME}
+      - PASSWORD=${APP_PASSWORD}
+      - PORT=8080
+      - STATE_FILE=/app/data/household_state.json
+    env_file:
+      - .env
+    volumes:
+      # Mount data directory for persistence during development
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

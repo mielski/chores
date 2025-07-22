@@ -15,6 +15,17 @@ param location string = resourceGroup().location
 @description('Resource token to make resource names unique')
 param resourceToken string = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
 
+@description('Secret key for Flask application')
+@secure()
+param appSecret string
+
+@description('Username for application login')
+param appUsername string = 'admin'
+
+@description('Password for application login')
+@secure()
+param appPassword string
+
 // Tags for resource management
 var tags = {
   'azd-env-name': environmentName
@@ -151,6 +162,16 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           identity: userAssignedIdentity.id
         }
       ]
+      secrets: [
+        {
+          name: 'app-secret'
+          value: appSecret
+        }
+        {
+          name: 'app-password'
+          value: appPassword
+        }
+      ]
     }
     template: {
       containers: [
@@ -165,6 +186,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'STATE_FILE'
               value: '/app/data/household_state.json'
+            }
+            {
+              name: 'SECRET'
+              secretRef: 'app-secret'
+            }
+            {
+              name: 'USERNAME'
+              value: appUsername
+            }
+            {
+              name: 'PASSWORD'
+              secretRef: 'app-password'
             }
           ]
           resources: {

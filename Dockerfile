@@ -30,6 +30,9 @@ EXPOSE 8080
 ENV PORT=8080
 ENV STATE_FILE=/app/data/household_state.json
 ENV PYTHONUNBUFFERED=1
+ENV SECRET=""
+ENV USERNAME=""
+ENV PASSWORD=""
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

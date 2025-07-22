@@ -10,6 +10,7 @@ A simple web application for tracking household tasks between family members wit
 - 💾 Persistent state shared across all devices on the network
 - 📱 Mobile-friendly responsive design
 - 🔄 Real-time state synchronization
+- 🔒 Protected with simple user/password authentication
 
 ## Architecture
 
@@ -28,6 +29,13 @@ The application consists of:
 
    - Docker Desktop installed and running
    - Git for cloning the repository
+   - create a `.env` file in the root directory with the following content:
+
+     ```plaintext
+     APP_SECRET=your_secret_key
+     APP_USERNAME=your_username
+     APP_PASSWORD=your_password
+     ```
 
 2. **Deploy Locally**
 
@@ -61,6 +69,10 @@ The application consists of:
    # Deploy to Azure
    azd up
    ```
+
+   - Follow the prompts to select the following
+     - resource group and region
+     - app secret, username, and password for authentication
 
 3. **Access the Application**
    - The deployment will provide a public URL
@@ -97,6 +109,9 @@ household-tracker/
 │       ├── index.html      # Main HTML file
 │       ├── script.js        # Frontend JavaScript
 │       └── style.css        # CSS styles
+│   └── templates/
+│       └── login.html       # HTML template for login page
+├── .dockerignore           # Docker ignore file
 ├── infra/
 │   ├── main.bicep         # Azure infrastructure as code
 │   └── main.parameters.json
@@ -117,10 +132,20 @@ The application stores task state in a JSON format:
 
 ```json
 {
-  "milou": [false, false, false, false, false, false, false],
-  "luca": [false, false, false, false, false, false, false],
-  "general": [false, false]
+  "milou": [false, false, false, false, false, false, false, ...],
+  "luca": [false, false, false, false, false, false, false, ...],
+  "general": [false, false, false, false, false, false, false, ...],
 }
+```
+This state is shared across all devices and persists even after the application restarts.
+
+Each element in the arrays corresponds to button states in the application, where `true` indicates done (active) and `false` indicates not done.
+
+The button states are stored in the order they appear in the HTML based on a class based query selector:
+```javascript
+const taskButtonsMilou = document.querySelectorAll("table .btn-milou");
+const taskButtonsLuca = document.querySelectorAll("table .btn-luca");
+const taskButtonsGeneral = document.querySelectorAll("table .btn-general");
 ```
 
 ## Azure Deployment Details
