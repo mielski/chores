@@ -14,6 +14,8 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
+from statemanager import state_manager
+
 
 # Constants for environment variable keys
 APP_USERNAME = 'APP_USERNAME'
@@ -70,45 +72,7 @@ STATE_FILE = os.getenv('STATE_FILE', 'household_state.json')
 PORT = int(os.getenv('PORT', 8080))
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
-def init_state_file():
-    """Initialize state file if it doesn't exist"""
-    default_state = {
-        "milou": [False] * 7,
-        "luca": [False] * 7, 
-        "general": [False] * 2
-    }
-    
-    if not os.path.exists(STATE_FILE):
-        logger.info(f"Creating new state file: {STATE_FILE}")
-        with open(STATE_FILE, 'w') as f:
-            json.dump(default_state, f)
-    else:
-        logger.info(f"Using existing state file: {STATE_FILE}")
 
-def load_state():
-    """Load state from JSON file with error handling"""
-    try:
-        with open(STATE_FILE, 'r') as f:
-            state = json.load(f)
-            logger.info("State loaded successfully")
-            return state
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error(f"Error loading state: {e}")
-        # Return default state and recreate file
-        init_state_file()
-        return load_state()
-
-def save_state(state):
-    """Save state to JSON file with error handling"""
-    try:
-        with open(STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
-            logger.info("State saved successfully")
-        return True
-    except Exception as e:
-        logger.error(f"Error saving state: {e}")
-        return False
-    
 class LoginForm(FlaskForm):
     """Form for user login"""
 
@@ -159,7 +123,7 @@ def static_files(filename):
 def get_state():
     """Get current application state"""
     try:
-        state = load_state()
+        state = state_manager.load_state()
         return jsonify({
             'success': True,
             'data': state
@@ -219,8 +183,8 @@ def reset_state():
             "luca": [False] * 7,
             "general": [False] * 2
         }
-        
-        success = save_state(default_state)
+
+        success = state_manager.save_state(default_state)
         if success:
             return jsonify({
                 'success': True,
@@ -250,8 +214,8 @@ def health_check():
 
 if __name__ == '__main__':
     # Initialize state file on startup
-    init_state_file()
-    
+    state_manager._init_state_file()
+
     logger.info(f"Starting Flask app on port {PORT}")
     logger.info(f"Debug mode: {DEBUG}")
     logger.info(f"State file: {STATE_FILE}")
