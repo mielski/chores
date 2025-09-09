@@ -1,0 +1,47 @@
+{
+  "users": {
+    "milou": {
+      "tasksPerWeek": 7,
+      "color": "#0ef706dc",
+      "displayName": "Milou"
+    },
+    "luca": {
+      "tasksPerWeek": 5,
+      "color": "#29b100",
+      "displayName": "Luca"
+    }
+  },
+  "generalTasks": {
+    "count": 2,
+    "tasks": [
+      "Huiskamer opruimen",
+      "Takken verzorgen"
+    ]
+  },
+  "personalTasks": [
+    "Vaatwasser",
+    "tafel dekken/afruimen", 
+    "Koken",
+    "Vuilnis/Papier wegbrengen",
+    "Kamer opruimen",
+    "Boodschappen",
+    "Overig",
+    "Joker"
+  ],
+  "weekdays": [
+    "Zondag",
+    "Maandag", 
+    "Dinsdag",
+    "Woensdag",
+    "Donderdag",
+    "Vrijdag",
+    "Zaterdag"
+  ],
+  "messages": [
+    "lekker bezig! 🚀",
+    "ga zo door! 🌟",
+    "held! 💪",
+    "knapperd! 😎",
+    "je hebt jezelf overtroffen! 🎉"
+  ]
+}

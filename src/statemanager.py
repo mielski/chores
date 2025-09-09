@@ -52,14 +52,143 @@ class BaseJsonManager:
         self.save()
 
 
+class TaskConfigManager(BaseJsonManager):
+    def __init__(self):
+        default_config = {
+            "users": {
+                "milou": {
+                    "tasksPerWeek": 7,
+                    "color": "#0ef706dc",
+                    "displayName": "Milou"
+                },
+                "luca": {
+                    "tasksPerWeek": 7,
+                    "color": "#29b100",
+                    "displayName": "Luca"
+                }
+            },
+            "generalTasks": {
+                "count": 2,
+                "tasks": [
+                    "Huiskamer opruimen",
+                    "Takken verzorgen"
+                ]
+            },
+            "personalTasks": [
+                "Vaatwasser",
+                "tafel dekken/afruimen", 
+                "Koken",
+                "Vuilnis/Papier wegbrengen",
+                "Kamer opruimen",
+                "Boodschappen",
+                "Overig",
+                "Joker"
+            ],
+            "weekdays": [
+                "Zondag",
+                "Maandag", 
+                "Dinsdag",
+                "Woensdag",
+                "Donderdag",
+                "Vrijdag",
+                "Zaterdag"
+            ],
+            "messages": [
+                "lekker bezig! 🚀",
+                "ga zo door! 🌟",
+                "held! 💪",
+                "knapperd! 😎",
+                "je hebt jezelf overtroffen! 🎉",
+                "je bent een topper! ⭐",
+                "fantastisch werk! 👏",
+                "je maakt het verschil! 🌈",
+                "je rockt! 🎸",
+                "briljant gedaan! 💡",
+                "superster! 🌟",
+                "gewoon geweldig! 🏆"
+            ]
+        }
+        super().__init__('task_config.json', default_config)
+
+    def get_default_state_for_config(self):
+        """Generate default state based on current configuration"""
+        config = self.content
+        state = {}
+        
+        # Create state for each user based on their task count
+        for user_id, user_config in config['users'].items():
+            task_count = user_config['tasksPerWeek']
+            state[user_id] = [False] * task_count
+        
+        # Create state for general tasks
+        general_count = config['generalTasks']['count']
+        state['general'] = [False] * general_count
+        
+        return state
+
+
 class StateManager(BaseJsonManager):
     def __init__(self):
+        # Initialize with a basic default, will be updated by task config
         default_state = {
             "milou": [False] * 7,
             "luca": [False] * 7,
             "general": [False] * 2
         }
-        super().__init__('state.json', default_state)
+        super().__init__('household_state.json', default_state)
+
+    def load_state(self):
+        """Load state, ensuring it matches current task configuration"""
+        # Load the current state
+        current_state = super().load()
+        
+        # Get expected state structure from task config
+        expected_state = task_config_manager.get_default_state_for_config()
+        
+        # Validate and adjust state if needed
+        adjusted_state = {}
+        for user_id, expected_tasks in expected_state.items():
+            if user_id in current_state:
+                current_tasks = current_state[user_id]
+                expected_length = len(expected_tasks)
+                current_length = len(current_tasks)
+                
+                if current_length == expected_length:
+                    # Perfect match
+                    adjusted_state[user_id] = current_tasks
+                elif current_length > expected_length:
+                    # Truncate if too long
+                    adjusted_state[user_id] = current_tasks[:expected_length]
+                    logger.info(f"Truncated {user_id} tasks from {current_length} to {expected_length}")
+                else:
+                    # Extend if too short
+                    adjusted_state[user_id] = current_tasks + [False] * (expected_length - current_length)
+                    logger.info(f"Extended {user_id} tasks from {current_length} to {expected_length}")
+            else:
+                # User doesn't exist in current state, use default
+                adjusted_state[user_id] = expected_tasks.copy()
+                logger.info(f"Added new user {user_id} with {len(expected_tasks)} tasks")
+        
+        # Save adjusted state if it changed
+        if adjusted_state != current_state:
+            self.content = adjusted_state
+            self.save()
+            logger.info("State adjusted to match task configuration")
+        
+        return adjusted_state
+
+    def save_state(self, new_state):
+        """Save new state"""
+        self.content = new_state
+        return self.save()
+
+    def reset_to_config(self):
+        """Reset state to match current task configuration"""
+        default_state = task_config_manager.get_default_state_for_config()
+        self.content = default_state
+        self.save()
+        logger.info("State reset to match task configuration")
+        return default_state
 
 
 class ConfigManager(BaseJsonManager):
@@ -70,5 +199,7 @@ class ConfigManager(BaseJsonManager):
         }
         super().__init__('config.json', default_config)
 
+# Initialize managers
+task_config_manager = TaskConfigManager()
 state_manager = StateManager()
 config_manager = ConfigManager()

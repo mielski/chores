@@ -1,7 +1,11 @@
 // project configuration constants
 "use strict";
 
-const complimentjes = [
+// Global configuration loaded from API
+let appConfig = {};
+
+// Default fallback values
+const defaultComplimentjes = [
   "lekker bezig! 🚀",
   "ga zo door! 🌟",
   "held! 💪",
@@ -15,23 +19,57 @@ const complimentjes = [
   "superster! 🌟",
   "gewoon geweldig! 🏆",
 ];
-const personalTaskNames = [
-  "Vaatwasser",
-  "tafel dekken/afruimen",
-  "Koken",
-  "Vuilnis/Papier wegbrengen",
-  "Kamer opruimen",
-  "Boodschappen",
-  "Overig",
-  "Joker",
-];
-const totalTasksRequired = 7;
+
+// Load configuration from API
+async function loadAppConfig() {
+  try {
+    const response = await fetch('/api/config');
+    const result = await response.json();
+    
+    if (result.success) {
+      appConfig = result.data;
+      console.log('Configuration loaded:', appConfig);
+    } else {
+      console.error('Failed to load configuration:', result.error);
+      // Use fallback configuration
+      appConfig = {
+        users: {
+          milou: { tasksPerWeek: 7, color: "#0ef706dc", displayName: "Milou" },
+          luca: { tasksPerWeek: 7, color: "#29b100", displayName: "Luca" }
+        },
+        personalTasks: ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
+        generalTasks: { tasks: ["General Task 1", "General Task 2"] },
+        messages: defaultComplimentjes
+      };
+    }
+  } catch (error) {
+    console.error('Error loading configuration:', error);
+    // Use fallback configuration
+    appConfig = {
+      users: {
+        milou: { tasksPerWeek: 7, color: "#0ef706dc", displayName: "Milou" },
+        luca: { tasksPerWeek: 7, color: "#29b100", displayName: "Luca" }
+      },
+      personalTasks: ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
+      generalTasks: { tasks: ["General Task 1", "General Task 2"] },
+      messages: defaultComplimentjes
+    };
+  }
+}
+
+// Initialize app configuration and then generate table
+async function initializeApp() {
+  await loadAppConfig();
+  generateTaskTable();
+  setupEventListeners();
+  updateApp();
+}
 
 /* High level functions of the app */
 
 // setup of the initial table
 function generateTaskTable() {
-  // run once on page load to create the tasks from the array personalTaskNames
+  // run once on page load to create the tasks from the configuration
   // and remove the template row
 
   const tableBody = document.querySelector("tbody");
@@ -39,85 +77,202 @@ function generateTaskTable() {
 
   function addRow(taskname) {
     const row = tableTemplateRow.cloneNode(true);
-
     row.firstElementChild.textContent = taskname;
     tableBody.appendChild(row);
   }
-  personalTaskNames.forEach((taskName) => {
+  
+  // Add general tasks first
+  appConfig.generalTasks.tasks.forEach((taskName) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td scope="row">${taskName}</td>
+      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
+      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
+      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
+      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
+      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
+      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
+      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
+    `;
+    tableBody.insertBefore(row, tableTemplateRow);
+  });
+  
+  // Add personal tasks
+  appConfig.personalTasks.forEach((taskName) => {
     addRow(taskName);
   });
+  
   tableTemplateRow.remove(); // remove the template element
+  
+  // Update CSS colors for users
+  updateUserColors();
 }
-generateTaskTable();
 
-// setup of the flow
-
-// references to progress bars and buttons used in functions
-const progressBarLuca = document.getElementById("progress-luca");
-const progressBarMilou = document.getElementById("progress-milou");
-const taskButtonsMilou = document.querySelectorAll("table .btn-milou");
-const taskButtonsLuca = document.querySelectorAll("table .btn-luca");
-const taskButtonsGeneral = document.querySelectorAll("table .general-task");
-const buttonReset = document.getElementById("reset");
-
-class ProgressBar {
-  // Class to handle the progress bar updates
-  // It takes an HTML element and the total number of tasks as parameters
-  // It has a method to update the progress bar and optionally show a compliment
-  // It also handles the timeout for showing the compliment
-  constructor(element, totalTasks) {
-    // element: HTML element for the progress bar
-    // totalTasks: total number of tasks to complete (integer)
-    this.progressBar = element;
-    this.done = 0;
-    this.required = totalTasks;
-    this.timeoutId = undefined;
+function updateUserColors() {
+  // Create dynamic CSS for user colors
+  const style = document.createElement('style');
+  let css = '';
+  
+  for (const [userId, userConfig] of Object.entries(appConfig.users)) {
+    css += `
+      #progress-${userId} {
+        background-color: ${userConfig.color} !important;
+      }
+      .btn-${userId} {
+        border-color: ${userConfig.color};
+        color: ${userConfig.color};
+      }
+      .btn-${userId}.active {
+        background-color: ${userConfig.color};
+        border-color: ${userConfig.color};
+      }
+      .btn-${userId}:hover {
+        background-color: ${userConfig.color};
+      }
+    `;
   }
-
-  updateProgress(giveCompliment = false) {
-    const randomIndex = Math.floor(Math.random() * complimentjes.length);
-    const compliment = complimentjes[randomIndex];
-
-    const progress =
-      Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
-    this.progressBar.style.width = progress;
-
-    if (this._timeOutId) clearTimeout(this._timeOutId);
-
-    if (giveCompliment) {
-      this.progressBar.innerText = compliment;
-      this._timeOutId = setTimeout(
-        () => (this.progressBar.innerText = progress),
-        2000
-      );
-    } else {
-      this.progressBar.innerText = progress;
+  
+  style.innerHTML = css;
+  document.head.appendChild(style);
+  
+  // Update progress bar labels
+  for (const [userId, userConfig] of Object.entries(appConfig.users)) {
+    const progressElement = document.getElementById(`progress-${userId}`);
+    if (progressElement && progressElement.parentElement && progressElement.parentElement.previousElementSibling) {
+      progressElement.parentElement.previousElementSibling.textContent = userConfig.displayName;
     }
   }
 }
+// setup of the flow
+function setupEventListeners() {
+  // references to progress bars and buttons used in functions
+  const progressBarLuca = document.getElementById("progress-luca");
+  const progressBarMilou = document.getElementById("progress-milou");
+  const taskButtonsMilou = document.querySelectorAll("table .btn-milou");
+  const taskButtonsLuca = document.querySelectorAll("table .btn-luca");
+  const taskButtonsGeneral = document.querySelectorAll("table .general-task");
+  const buttonReset = document.getElementById("reset");
 
-const progressLuca = new ProgressBar(progressBarLuca, totalTasksRequired);
-const progressMilou = new ProgressBar(progressBarMilou, totalTasksRequired);
+  class ProgressBar {
+    // Class to handle the progress bar updates
+    // It takes an HTML element and the total number of tasks as parameters
+    // It has a method to update the progress bar and optionally show a compliment
+    // It also handles the timeout for showing the compliment
+    constructor(element, totalTasks) {
+      // element: HTML element for the progress bar
+      // totalTasks: total number of tasks to complete (integer)
+      this.progressBar = element;
+      this.done = 0;
+      this.required = totalTasks;
+      this.timeoutId = undefined;
+    }
+
+    updateProgress(giveCompliment = false) {
+      const complimentjes = appConfig.messages || defaultComplimentjes;
+      const randomIndex = Math.floor(Math.random() * complimentjes.length);
+      const compliment = complimentjes[randomIndex];
+
+      const progress =
+        Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
+      this.progressBar.style.width = progress;
+
+      if (this._timeOutId) clearTimeout(this._timeOutId);
+
+      if (giveCompliment) {
+        this.progressBar.innerText = compliment;
+        this._timeOutId = setTimeout(
+          () => (this.progressBar.innerText = progress),
+          2000
+        );
+      } else {
+        this.progressBar.innerText = progress;
+      }
+    }
+  }
+
+  // Create progress bars for each user
+  const progressBars = {};
+  for (const [userId, userConfig] of Object.entries(appConfig.users)) {
+    const progressElement = document.getElementById(`progress-${userId}`);
+    if (progressElement) {
+      progressBars[userId] = new ProgressBar(progressElement, userConfig.tasksPerWeek);
+    }
+  }
+
+  // Event listeners for user buttons
+  Object.keys(appConfig.users).forEach(userId => {
+    const userButtons = document.querySelectorAll(`.btn-${userId}`);
+    userButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        let countChange = button.classList.contains("active") ? -1 : 1;
+        button.classList.toggle("active");
+        console.log(countChange);
+        
+        if (progressBars[userId]) {
+          progressBars[userId].done += countChange;
+          progressBars[userId].updateProgress(countChange === 1);
+        }
+        
+        if (countChange === 1) {
+          // Show confetti based on user
+          if (userId === 'milou') {
+            sideConfetti('left');
+          } else if (userId === 'luca') {
+            sideConfetti('right');
+          } else {
+            sideConfetti('both');
+          }
+        }
+        storeState();
+      });
+    });
+  });
+
+  taskButtonsGeneral.forEach((button) => {
+    button.addEventListener("click", () => {
+      const isActive = button.classList.toggle("active");
+      button.innerText = isActive ? " 🎉 " : "...";
+      if (isActive) {
+        // Big celebration for general tasks
+        celebrationBurst();
+      }
+      storeState();
+    });
+  });
+
+  buttonReset.addEventListener("click", async () => {
+    await storeState(true);
+    await updateApp();
+  });
+}
 
 async function storeState(reset = false) {
   // store state of the buttons to backend API
   // if reset=true stored false for all states in order to reset the app
-  let stateData;
+  let stateData = {};
+  
   if (reset) {
-    // alternative implementation, create a new array with false with lengths of states
-    stateData = {
-      milou: Array.from(taskButtonsMilou, () => false),
-      luca: Array.from(taskButtonsLuca, () => false),
-      general: Array.from(taskButtonsGeneral, () => false),
-    };
+    // Create new arrays with false for all users and general tasks
+    for (const userId of Object.keys(appConfig.users)) {
+      const userButtons = document.querySelectorAll(`.btn-${userId}`);
+      stateData[userId] = Array.from(userButtons, () => false);
+    }
+    const generalButtons = document.querySelectorAll('.general-task');
+    stateData.general = Array.from(generalButtons, () => false);
   } else {
     const isActive = (x) => x.classList.contains("active");
-    stateData = {
-      milou: [...taskButtonsMilou].map(isActive),
-      luca: [...taskButtonsLuca].map(isActive),
-      general: [...taskButtonsGeneral].map(isActive),
-    };
+    
+    // Store state for each user
+    for (const userId of Object.keys(appConfig.users)) {
+      const userButtons = document.querySelectorAll(`.btn-${userId}`);
+      stateData[userId] = [...userButtons].map(isActive);
+    }
+    
+    // Store state for general tasks
+    const generalButtons = document.querySelectorAll('.general-task');
+    stateData.general = [...generalButtons].map(isActive);
   }
+  
   try {
     const response = await fetch("/api/state", {
       method: "POST",
@@ -150,12 +305,6 @@ async function updateApp() {
 
     const storedButtonStates = result.data;
 
-    const dataTobuttonsMap = new Map([
-      ["milou", taskButtonsMilou],
-      ["luca", taskButtonsLuca],
-      ["general", taskButtonsGeneral],
-    ]);
-
     function applyStateToButtonList(buttonNodes, isActiveArray) {
       // sets buttons to active based on state data
       isActiveArray.forEach((value, index) => {
@@ -167,33 +316,41 @@ async function updateApp() {
       });
     }
 
-    // iterate buttons and apply stored state
-    for (let key in storedButtonStates) {
-      applyStateToButtonList(
-        dataTobuttonsMap.get(key),
-        storedButtonStates[key]
-      );
-      console.log(key, storedButtonStates[key]);
+    // Apply state for each user
+    for (const userId of Object.keys(appConfig.users)) {
+      if (storedButtonStates[userId]) {
+        const userButtons = document.querySelectorAll(`.btn-${userId}`);
+        applyStateToButtonList(userButtons, storedButtonStates[userId]);
+        
+        // Update progress bars
+        if (window.progressBars && window.progressBars[userId]) {
+          window.progressBars[userId].done = storedButtonStates[userId].filter((x) => x).length;
+          window.progressBars[userId].updateProgress();
+        }
+      }
     }
 
-    // for the general buttons, do the conversion of the innerText manually
-    taskButtonsGeneral.forEach((button) => {
-      button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
-    });
+    // Apply state for general tasks
+    if (storedButtonStates.general) {
+      const generalButtons = document.querySelectorAll('.general-task');
+      applyStateToButtonList(generalButtons, storedButtonStates.general);
+      
+      // Update general button text
+      generalButtons.forEach((button) => {
+        button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
+      });
+    }
 
-    // restore the tasks done for Luca and Milou
-    progressLuca.done = storedButtonStates["luca"].filter((x) => x).length;
-    progressLuca.updateProgress();
-
-    progressMilou.done = storedButtonStates["milou"].filter((x) => x).length;
-    progressMilou.updateProgress();
+    console.log('State loaded:', storedButtonStates);
   } catch (error) {
     console.error("Error loading state:", error);
     // Fallback to default state
-    progressLuca.done = 0;
-    progressLuca.updateProgress();
-    progressMilou.done = 0;
-    progressMilou.updateProgress();
+    for (const userId of Object.keys(appConfig.users)) {
+      if (window.progressBars && window.progressBars[userId]) {
+        window.progressBars[userId].done = 0;
+        window.progressBars[userId].updateProgress();
+      }
+    }
   }
 }
 
@@ -265,53 +422,6 @@ function celebrationBurst() {
   }, 500);
 }
 
-taskButtonsMilou.forEach((button) => {
-  button.addEventListener("click", () => {
-    let countChange = button.classList.contains("active") ? -1 : 1;
-    button.classList.toggle("active");
-    console.log(countChange);
-    progressMilou.done += countChange;
-    progressMilou.updateProgress(countChange === 1);
-    if (countChange === 1) {
-      // Show confetti from sides for Milou
-      sideConfetti('left');
-    }
-    storeState();
-  });
-});
-
-taskButtonsLuca.forEach((button) => {
-  button.addEventListener("click", () => {
-    let countChange = button.classList.contains("active") ? -1 : 1;
-    button.classList.toggle("active");
-    console.log(countChange);
-    progressLuca.done += countChange;
-    progressLuca.updateProgress(countChange === 1);
-    if (countChange === 1) {
-      // Show confetti from sides for Luca
-      sideConfetti('right');
-    }
-    storeState();
-  });
-});
-
-taskButtonsGeneral.forEach((button) => {
-  button.addEventListener("click", () => {
-    const isActive = button.classList.toggle("active");
-    button.innerText = isActive ? " 🎉 " : "...";
-    if (isActive) {
-      // Big celebration for general tasks
-      celebrationBurst();
-    }
-    storeState();
-  });
-});
-
-buttonReset.addEventListener("click", async () => {
-  await storeState(true);
-  await updateApp();
-});
-
 /*
 Design overview, what kind of operations do I have
 
@@ -320,4 +430,6 @@ update single process bar from a button update
 update all from reset button -> set all buttons and update both progress bars separately
 update all from data load -> set all buttons and update both progress bars separately
 */
-updateApp();
+
+// Initialize the application
+initializeApp();
