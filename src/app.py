@@ -15,6 +15,9 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
 
+# Constants for environment variable keys
+APP_USERNAME = 'APP_USERNAME'
+APP_PASSWORD = 'APP_PASSWORD'
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,8 +29,8 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv('SECRET')
 try:
-    app.config["USERNAME"] = os.environ['USERNAME']
-    app.config["PASSWORD"] = os.environ['PASSWORD']
+    app.config[APP_USERNAME] = os.environ[APP_USERNAME]
+    app.config[APP_PASSWORD] = os.environ[APP_PASSWORD]
 except KeyError as e:
     logger.error(f"No username and/or password environment variables found, terminating application")
     exit(1)
@@ -58,7 +61,7 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     """checks if user ID can be found and return a user object"""
-    if user_id == app.config["USERNAME"]:
+    if user_id == app.config[APP_USERNAME]:
         return User(id=user_id)
     return None
 
@@ -124,7 +127,7 @@ def login():
     if form.validate_on_submit():
         username = form.username.data
         password = form.password.data
-        if username == app.config["USERNAME"] and password == app.config["PASSWORD"]:
+        if username == app.config[APP_USERNAME] and password == app.config[APP_PASSWORD]:
             user = User(id=username)
             login_user(user)
             return redirect('/')
