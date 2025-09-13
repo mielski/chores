@@ -1,6 +1,43 @@
 // project configuration constants
 "use strict";
 
+class ProgressBar {
+  // Class to handle the progress bar updates
+  // It takes an HTML element and the total number of tasks as parameters
+  // It has a method to update the progress bar and optionally show a compliment
+  // It also handles the timeout for showing the compliment
+  constructor(element, totalTasks) {
+    // element: HTML element for the progress bar
+    // totalTasks: total number of tasks to complete (integer)
+    this.progressBar = element;
+    this.done = 0;
+    this.required = totalTasks;
+    this.timeoutId = undefined;
+  }
+
+  updateProgress(giveCompliment = false) {
+    const complimentjes = appConfig.messages || defaultComplimentjes;
+    const randomIndex = Math.floor(Math.random() * complimentjes.length);
+    const compliment = complimentjes[randomIndex];
+
+    const progress =
+      Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
+    this.progressBar.style.width = progress;
+
+    if (this._timeOutId) clearTimeout(this._timeOutId);
+
+    if (giveCompliment) {
+      this.progressBar.innerText = compliment;
+      this._timeOutId = setTimeout(
+        () => (this.progressBar.innerText = progress),
+        2000
+      );
+    } else {
+      this.progressBar.innerText = progress;
+    }
+  }
+}
+
 // Global configuration loaded from API
 let appConfig = {};
 
@@ -22,39 +59,33 @@ const defaultComplimentjes = [
 
 // Load configuration from API
 async function loadAppConfig() {
-  try {
-    const response = await fetch('/api/config');
-    const result = await response.json();
-    
-    if (result.success) {
-      appConfig = result.data;
-      console.log('Configuration loaded:', appConfig);
-    } else {
-      console.error('Failed to load configuration:', result.error);
-      // Use fallback configuration
-      appConfig = {
-        users: {
-          milou: { tasksPerWeek: 7, color: "#0ef706dc", displayName: "Milou" },
-          luca: { tasksPerWeek: 7, color: "#29b100", displayName: "Luca" }
-        },
-        personalTasks: ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
-        generalTasks: { tasks: ["General Task 1", "General Task 2"] },
-        messages: defaultComplimentjes
-      };
-    }
-  } catch (error) {
-    console.error('Error loading configuration:', error);
-    // Use fallback configuration
-    appConfig = {
-      users: {
-        milou: { tasksPerWeek: 7, color: "#0ef706dc", displayName: "Milou" },
-        luca: { tasksPerWeek: 7, color: "#29b100", displayName: "Luca" }
-      },
-      personalTasks: ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
-      generalTasks: { tasks: ["General Task 1", "General Task 2"] },
-      messages: defaultComplimentjes
-    };
-  }
+
+  // fallback configuration in case of error
+  const fallbackConfig = {
+    users: {
+      milou: { tasksPerWeek: 7, color: "#0ef706dc", displayName: "Milou" },
+      luca: { tasksPerWeek: 7, color: "#29b100", displayName: "Luca" }
+    },
+    personalTasks: ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
+    generalTasks: { tasks: ["General Task 1", "General Task 2"] },
+    messages: defaultComplimentjes
+  };
+
+  // Fetch configuration from backend API and use fallback on error
+  return fetch('/api/config')
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        appConfig = result.data;
+        console.log('Configuration loaded:', appConfig);
+      } else {
+        throw new Error('Failed to load configuration', result);
+      }
+    })
+    .catch(error => {
+      console.error('Error loading configuration:', error);
+      appConfig = fallbackConfig;
+    });
 }
 
 // Initialize app configuration and then generate table
@@ -146,50 +177,10 @@ function updateUserColors() {
 // setup of the flow
 function setupEventListeners() {
   // references to progress bars and buttons used in functions
-  const progressBarLuca = document.getElementById("progress-luca");
-  const progressBarMilou = document.getElementById("progress-milou");
-  const taskButtonsMilou = document.querySelectorAll("table .btn-milou");
-  const taskButtonsLuca = document.querySelectorAll("table .btn-luca");
   const taskButtonsGeneral = document.querySelectorAll("table .general-task");
   const buttonReset = document.getElementById("reset");
 
-  class ProgressBar {
-    // Class to handle the progress bar updates
-    // It takes an HTML element and the total number of tasks as parameters
-    // It has a method to update the progress bar and optionally show a compliment
-    // It also handles the timeout for showing the compliment
-    constructor(element, totalTasks) {
-      // element: HTML element for the progress bar
-      // totalTasks: total number of tasks to complete (integer)
-      this.progressBar = element;
-      this.done = 0;
-      this.required = totalTasks;
-      this.timeoutId = undefined;
-    }
-
-    updateProgress(giveCompliment = false) {
-      const complimentjes = appConfig.messages || defaultComplimentjes;
-      const randomIndex = Math.floor(Math.random() * complimentjes.length);
-      const compliment = complimentjes[randomIndex];
-
-      const progress =
-        Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
-      this.progressBar.style.width = progress;
-
-      if (this._timeOutId) clearTimeout(this._timeOutId);
-
-      if (giveCompliment) {
-        this.progressBar.innerText = compliment;
-        this._timeOutId = setTimeout(
-          () => (this.progressBar.innerText = progress),
-          2000
-        );
-      } else {
-        this.progressBar.innerText = progress;
-      }
-    }
-  }
-
+  
   // Create progress bars for each user
   const progressBars = {};
   for (const [userId, userConfig] of Object.entries(appConfig.users)) {
