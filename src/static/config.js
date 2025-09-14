@@ -24,6 +24,10 @@ async function loadConfig() {
     }
 }
 
+// --------------------------------
+// functions related to rendering the configuration UI
+// and handling user interactions
+// --------------------------------
 function renderConfig() {
     renderUsers();
     renderPersonalTasks();
@@ -111,7 +115,9 @@ function renderMessages() {
     });
 }
 
-// Update functions
+// --------------------------------
+// functions for updating, adding, removing configuration items
+// --------------------------------
 function updateUser(userId, field, value) {
     if (currentConfig.users[userId]) {
         currentConfig.users[userId][field] = value;
