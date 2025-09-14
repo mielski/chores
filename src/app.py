@@ -116,7 +116,7 @@ def index():
 @login_required
 def config_page():
     """Serve the configuration page"""
-    return send_from_directory('static', 'config.html')
+    return send_from_directory('static', 'configpage.html')
 
 @app.route('/<path:filename>')
 def static_files(filename):
