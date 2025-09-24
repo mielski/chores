@@ -1,6 +1,7 @@
 // project configuration constants
 "use strict";
 
+
 class ProgressBar {
   // Class to handle the progress bar updates
   // It takes an HTML element and the total number of tasks as parameters
