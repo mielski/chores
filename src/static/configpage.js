@@ -2,18 +2,13 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await loadConfig();
+  configReady
+    .then(() => renderConfig())
+    .catch((error) => {
+      showAlert("Failed to load configuration: " + error, "danger");
+    });
 });
 
-// Now loadConfig only handles frontend updates
-async function loadConfig() {
-  const result = await fetchConfigFromServer();
-  if (result.success) {
-    renderConfig();
-  } else {
-    showAlert("Failed to load configuration: " + result.error, "danger");
-  }
-}
 
 // --------------------------------
 // functions related to rendering the configuration UI

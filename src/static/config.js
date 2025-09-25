@@ -2,7 +2,7 @@ const defaultConfig = {
   users: {
     milou: {
       tasksPerWeek: 7,
-      color: "#0ef706dc",
+      color: "#f706eb",
       displayName: "Milou",
     },
     luca: {
@@ -63,10 +63,10 @@ async function fetchConfigFromServer() {
       currentConfig = result.data;
       return { success: true, data: result.data };
     } else {
-      return { success: false, error: result.error };
+      throw { success: false, error: result.error };
     }
   } catch (error) {
-    return { success: false, error: error.message };
+    throw { success: false, error: error.message };
   }
 }
 
@@ -90,3 +90,5 @@ async function saveConfigToServer(newConfig) {
     return { success: false, error: error.message };
   }
 }
+
+const configReady = fetchConfigFromServer();

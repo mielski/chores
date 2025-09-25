@@ -2,6 +2,7 @@
 "use strict";
 
 
+
 class ProgressBar {
   // Class to handle the progress bar updates
   // It takes an HTML element and the total number of tasks as parameters
@@ -17,7 +18,7 @@ class ProgressBar {
   }
 
   updateProgress(giveCompliment = false) {
-    const complimentjes = appConfig.messages || defaultComplimentjes;
+    const complimentjes = currentConfig.messages || defaultComplimentjes;
     const randomIndex = Math.floor(Math.random() * complimentjes.length);
     const compliment = complimentjes[randomIndex];
 
@@ -40,7 +41,8 @@ class ProgressBar {
 }
 
 // Global configuration loaded from API
-let appConfig = {};
+console.log("App config at start:", currentConfig);
+
 
 // Default fallback values
 const defaultComplimentjes = [
@@ -61,37 +63,24 @@ const defaultComplimentjes = [
 // Load configuration from API
 async function loadAppConfig() {
 
-  // fallback configuration in case of error
-  const fallbackConfig = {
-    users: {
-      milou: { tasksPerWeek: 7, color: "#0ef706dc", displayName: "Milou" },
-      luca: { tasksPerWeek: 7, color: "#29b100", displayName: "Luca" }
-    },
-    personalTasks: ["Task 1", "Task 2", "Task 3", "Task 4", "Task 5", "Task 6", "Task 7"],
-    generalTasks: { tasks: ["General Task 1", "General Task 2"] },
-    messages: defaultComplimentjes
-  };
-
-  // Fetch configuration from backend API and use fallback on error
-  return fetch('/api/config')
-    .then(response => response.json())
-    .then(result => {
-      if (result.success) {
-        appConfig = result.data;
-        console.log('Configuration loaded:', appConfig);
-      } else {
-        throw new Error('Failed to load configuration', result);
-      }
-    })
-    .catch(error => {
-      console.error('Error loading configuration:', error);
-      appConfig = fallbackConfig;
-    });
+  // wait for the configuration to be ready
+  // log errors and use fallback if needed
+  // do not block the caller, so no await or return here!
+  try {
+    const result = await configReady;
+    console.log("promise result:", result);
+  } catch (error) {
+    console.error('Error loading configuration:', error);
+  }
+    
 }
 
 // Initialize app configuration and then generate table
 async function initializeApp() {
+  console.log("Initializing app, current config:", currentConfig);
+  
   await loadAppConfig();
+  console.log("App config after loading:", currentConfig);
   generateTaskTable();
   setupEventListeners();
   updateApp();
@@ -114,7 +103,7 @@ function generateTaskTable() {
   }
   
   // Add general tasks first
-  appConfig.generalTasks.tasks.forEach((taskName) => {
+  currentConfig.generalTasks.tasks.forEach((taskName) => {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td scope="row">${taskName}</td>
@@ -130,7 +119,7 @@ function generateTaskTable() {
   });
   
   // Add personal tasks
-  appConfig.personalTasks.forEach((taskName) => {
+  currentConfig.personalTasks.forEach((taskName) => {
     addRow(taskName);
   });
   
@@ -145,7 +134,7 @@ function updateUserColors() {
   const style = document.createElement('style');
   let css = '';
   
-  for (const [userId, userConfig] of Object.entries(appConfig.users)) {
+  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     css += `
       #progress-${userId} {
         background-color: ${userConfig.color} !important;
@@ -168,7 +157,7 @@ function updateUserColors() {
   document.head.appendChild(style);
   
   // Update progress bar labels
-  for (const [userId, userConfig] of Object.entries(appConfig.users)) {
+  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     const progressElement = document.getElementById(`progress-${userId}`);
     if (progressElement && progressElement.parentElement && progressElement.parentElement.previousElementSibling) {
       progressElement.parentElement.previousElementSibling.textContent = userConfig.displayName;
@@ -184,7 +173,7 @@ function setupEventListeners() {
   
   // Create progress bars for each user
   const progressBars = {};
-  for (const [userId, userConfig] of Object.entries(appConfig.users)) {
+  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     const progressElement = document.getElementById(`progress-${userId}`);
     if (progressElement) {
       progressBars[userId] = new ProgressBar(progressElement, userConfig.tasksPerWeek);
@@ -192,7 +181,7 @@ function setupEventListeners() {
   }
 
   // Event listeners for user buttons
-  Object.keys(appConfig.users).forEach(userId => {
+  Object.keys(currentConfig.users).forEach(userId => {
     const userButtons = document.querySelectorAll(`.btn-${userId}`);
     userButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -245,7 +234,7 @@ async function storeState(reset = false) {
   
   if (reset) {
     // Create new arrays with false for all users and general tasks
-    for (const userId of Object.keys(appConfig.users)) {
+    for (const userId of Object.keys(currentConfig.users)) {
       const userButtons = document.querySelectorAll(`.btn-${userId}`);
       stateData[userId] = Array.from(userButtons, () => false);
     }
@@ -255,7 +244,7 @@ async function storeState(reset = false) {
     const isActive = (x) => x.classList.contains("active");
     
     // Store state for each user
-    for (const userId of Object.keys(appConfig.users)) {
+    for (const userId of Object.keys(currentConfig.users)) {
       const userButtons = document.querySelectorAll(`.btn-${userId}`);
       stateData[userId] = [...userButtons].map(isActive);
     }
@@ -309,7 +298,7 @@ async function updateApp() {
     }
 
     // Apply state for each user
-    for (const userId of Object.keys(appConfig.users)) {
+    for (const userId of Object.keys(currentConfig.users)) {
       if (storedButtonStates[userId]) {
         const userButtons = document.querySelectorAll(`.btn-${userId}`);
         applyStateToButtonList(userButtons, storedButtonStates[userId]);
@@ -337,7 +326,7 @@ async function updateApp() {
   } catch (error) {
     console.error("Error loading state:", error);
     // Fallback to default state
-    for (const userId of Object.keys(appConfig.users)) {
+    for (const userId of Object.keys(currentConfig.users)) {
       if (window.progressBars && window.progressBars[userId]) {
         window.progressBars[userId].done = 0;
         window.progressBars[userId].updateProgress();
