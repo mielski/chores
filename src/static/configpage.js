@@ -72,7 +72,7 @@ function renderGeneralTasks() {
   const container = document.getElementById("general-tasks-config");
   container.innerHTML = "";
 
-  currentConfig.generalTasks.tasks.forEach((task, index) => {
+  currentConfig.generalTasks.forEach((task, index) => {
     const taskDiv = document.createElement("div");
     taskDiv.className = "mb-2 input-group";
     taskDiv.innerHTML = `
@@ -82,8 +82,6 @@ function renderGeneralTasks() {
     container.appendChild(taskDiv);
   });
 
-  // Update count automatically
-  currentConfig.generalTasks.count = currentConfig.generalTasks.tasks.length;
 }
 
 function renderMessages() {
@@ -115,8 +113,7 @@ function updatePersonalTask(index, value) {
 }
 
 function updateGeneralTask(index, value) {
-  currentConfig.generalTasks.tasks[index] = value;
-  currentConfig.generalTasks.count = currentConfig.generalTasks.tasks.length;
+  currentConfig.generalTasks[index] = value;
 }
 
 function updateMessage(index, value) {

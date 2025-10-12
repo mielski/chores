@@ -11,10 +11,10 @@ const defaultConfig = {
       displayName: "Luca",
     },
   },
-  generalTasks: {
-    count: 2,
-    tasks: ["Huiskamer opruimen", "Takken verzorgen"],
-  },
+  generalTasks: [
+    "Huiskamer opruimen",
+    "Takken verzorgen",
+  ],
   personalTasks: [
     "Vaatwasser",
     "tafel dekken/afruimen",
@@ -24,15 +24,6 @@ const defaultConfig = {
     "Boodschappen",
     "Overig",
     "Joker",
-  ],
-  weekdays: [
-    "Zondag",
-    "Maandag",
-    "Dinsdag",
-    "Woensdag",
-    "Donderdag",
-    "Vrijdag",
-    "Zaterdag",
   ],
   messages: [
     "lekker bezig! 🚀",

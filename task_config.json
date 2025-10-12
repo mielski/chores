@@ -1,11 +1,30 @@
 {
-  "generalTasks": {
-    "count": 2,
-    "tasks": [
+  "users": {
+    "milou": {
+      "tasksPerWeek": 7,
+      "color": "#f706eb",
+      "displayName": "Milou"
+    },
+    "luca": {
+      "tasksPerWeek": 7,
+      "color": "#29b100",
+      "displayName": "Luca"
+    }
+  },
+  "generalTasks": [
       "Huiskamer opruimen",
       "Takken verzorgen"
-    ]
-  },
+  ],
+  "personalTasks": [
+    "Vaatwasser",
+    "tafel dekken/afruimen",
+    "Koken",
+    "Vuilnis/Papier wegbrengen",
+    "Kamer opruimen",
+    "Boodschappen",
+    "Overig",
+    "Joker"
+  ],
   "messages": [
     "lekker bezig! \ud83d\ude80",
     "ga zo door! \ud83c\udf1f",
@@ -19,36 +38,5 @@
     "briljant gedaan! \ud83d\udca1",
     "superster! \ud83c\udf1f",
     "gewoon geweldig! \ud83c\udfc6"
-  ],
-  "personalTasks": [
-    "Vaatwasser",
-    "tafel dekken/afruimen",
-    "Koken",
-    "Vuilnis/Papier wegbrengen",
-    "Kamer opruimen",
-    "Boodschappen",
-    "Overig",
-    "Joker"
-  ],
-  "users": {
-    "luca": {
-      "color": "#29b100",
-      "displayName": "Luca",
-      "tasksPerWeek": 3
-    },
-    "milou": {
-      "color": "#f706eb",
-      "displayName": "Milou",
-      "tasksPerWeek": 7
-    }
-  },
-  "weekdays": [
-    "Zondag",
-    "Maandag",
-    "Dinsdag",
-    "Woensdag",
-    "Donderdag",
-    "Vrijdag",
-    "Zaterdag"
   ]
 }

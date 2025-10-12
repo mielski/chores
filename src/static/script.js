@@ -103,7 +103,7 @@ function generateTaskTable() {
   }
   
   // Add general tasks first
-  currentConfig.generalTasks.tasks.forEach((taskName) => {
+  currentConfig.generalTasks.forEach((taskName) => {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td scope="row">${taskName}</td>

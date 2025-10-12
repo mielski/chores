@@ -11,7 +11,8 @@ A simple web application for tracking household tasks between family members wit
 - 📱 Mobile-friendly responsive design
 - 🔄 Real-time state synchronization
 - 🔒 Protected with simple user/password authentication
-- ⚙️ Web-based configuration interface for full customization
+- 🌍 Web-based configuration interface for full customization
+- ⚙️ Customizable UI themes and tasks
 
 ## Architecture
 
@@ -131,8 +132,8 @@ household-tracker/
 
 - `GET /` - Serve the main application
 - `GET /config` - Serve the configuration interface
-- `GET /api/config` - Get current task configuration
-- `POST /api/config` - Update task configuration
+- `GET /api/config` - Get current app configuration
+- `POST /api/config` - Update app configuration
 - `GET /api/state` - Get current task state
 - `POST /api/state` - Update task state
 - `POST /api/reset` - Reset all tasks
@@ -388,7 +389,7 @@ We welcome contributions! Here's how to get started:
    ```bash
    # Test locally with Docker
    .\deploy-local.ps1
-   
+
    # Test different configurations through the web interface
    # Test state persistence across restarts
    ```
