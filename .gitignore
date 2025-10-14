@@ -61,3 +61,4 @@ task_config.json
 # Temporary files
 *.tmp
 *.temp
+task_config.json

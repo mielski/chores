@@ -58,7 +58,7 @@ class TaskConfigManager(BaseJsonManager):
             "users": {
                 "milou": {
                     "tasksPerWeek": 7,
-                    "color": "#0ef706dc",
+                    "color": "#f706e3",
                     "displayName": "Milou"
                 },
                 "luca": {
@@ -67,13 +67,10 @@ class TaskConfigManager(BaseJsonManager):
                     "displayName": "Luca"
                 }
             },
-            "generalTasks": {
-                "count": 2,
-                "tasks": [
+            "generalTasks": [
                     "Huiskamer opruimen",
                     "Takken verzorgen"
-                ]
-            },
+            ],
             "personalTasks": [
                 "Vaatwasser",
                 "tafel dekken/afruimen", 
@@ -83,15 +80,6 @@ class TaskConfigManager(BaseJsonManager):
                 "Boodschappen",
                 "Overig",
                 "Joker"
-            ],
-            "weekdays": [
-                "Zondag",
-                "Maandag", 
-                "Dinsdag",
-                "Woensdag",
-                "Donderdag",
-                "Vrijdag",
-                "Zaterdag"
             ],
             "messages": [
                 "lekker bezig! 🚀",
