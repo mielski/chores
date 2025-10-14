@@ -53,48 +53,19 @@ class BaseJsonManager:
 
 
 class TaskConfigManager(BaseJsonManager):
+    """
+    Manages the app configuration
+    users - dict of user_id to user config (name, tasksPerWeek)
+    generalTasks - list of general tasks accomplished once over users
+    personalTasks - list of personal tasks accomplished once per user
+    """
+
     def __init__(self):
         default_config = {
-            "users": {
-                "milou": {
-                    "tasksPerWeek": 7,
-                    "color": "#f706e3",
-                    "displayName": "Milou"
-                },
-                "luca": {
-                    "tasksPerWeek": 7,
-                    "color": "#29b100",
-                    "displayName": "Luca"
-                }
-            },
-            "generalTasks": [
-                    "Huiskamer opruimen",
-                    "Takken verzorgen"
-            ],
-            "personalTasks": [
-                "Vaatwasser",
-                "tafel dekken/afruimen", 
-                "Koken",
-                "Vuilnis/Papier wegbrengen",
-                "Kamer opruimen",
-                "Boodschappen",
-                "Overig",
-                "Joker"
-            ],
-            "messages": [
-                "lekker bezig! 🚀",
-                "ga zo door! 🌟",
-                "held! 💪",
-                "knapperd! 😎",
-                "je hebt jezelf overtroffen! 🎉",
-                "je bent een topper! ⭐",
-                "fantastisch werk! 👏",
-                "je maakt het verschil! 🌈",
-                "je rockt! 🎸",
-                "briljant gedaan! 💡",
-                "superster! 🌟",
-                "gewoon geweldig! 🏆"
-            ]
+            "users": {},
+            "generalTasks": [],
+            "personalTasks": [],
+            "messages": []
         }
         super().__init__('task_config.json', default_config)
 
@@ -109,13 +80,15 @@ class TaskConfigManager(BaseJsonManager):
             state[user_id] = [False] * task_count
         
         # Create state for general tasks
-        general_count = config['generalTasks']['count']
-        state['general'] = [False] * general_count
+        state['general'] = [False] * len(config['generalTasks'])
         
         return state
 
 
 class StateManager(BaseJsonManager):
+    """
+    Manages the state of the user tasks.
+    """
     def __init__(self):
         # Initialize with a basic default, will be updated by task config
         default_state = {

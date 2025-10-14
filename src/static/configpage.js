@@ -28,15 +28,16 @@ function renderUsers() {
   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     const userDiv = document.createElement("div");
     userDiv.className = "mb-3 p-3 border rounded";
+    // some controls are disabled until user management is fully implemented
     userDiv.innerHTML = `
             <div class="row">
                 <div class="col-md-4">
                     <label class="form-label">User ID</label>
-                    <input type="text" class="form-control" value="${userId}" onchange="updateUserId('${userId}', this.value)" readonly>
+                    <input type="text" class="form-control disabled" value="${userId}" onchange="updateUserId('${userId}', this.value)" readonly disabled>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Display Name</label>
-                    <input type="text" class="form-control" value="${userConfig.displayName}" onchange="updateUser('${userId}', 'displayName', this.value)">
+                    <input type="text" class="form-control disabled" value="${userConfig.displayName}" onchange="updateUser('${userId}', 'displayName', this.value)" readonly disabled>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Tasks/Week</label>
@@ -47,7 +48,7 @@ function renderUsers() {
                     <input type="color" class="form-control" value="${userConfig.color}" onchange="updateUser('${userId}', 'color', this.value)">
                 </div>
             </div>
-            <button class="btn btn-outline-danger btn-sm mt-2" onclick="removeUser('${userId}')">Remove User</button>
+            <button class="btn btn-outline-danger btn-sm mt-2 disabled" onclick="removeUser('${userId}')">Remove User</button>
         `;
     container.appendChild(userDiv);
   }
