@@ -20,6 +20,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+taskconfig.json
 
 # Virtual environments
 .env
@@ -49,8 +50,10 @@ Thumbs.db
 # Azure deployment files (contains sensitive information)
 .azure/
 
-# Docker
+# app state management
 household_state.json
+task_config.json
+
 
 # Logs
 *.log
@@ -58,3 +61,4 @@ household_state.json
 # Temporary files
 *.tmp
 *.temp
+task_config.json

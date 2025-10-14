@@ -3,7 +3,6 @@ Flask backend for Household Task Tracker
 Serves static files and provides REST API for state management
 """
 import os
-import json
 import logging
 
 from dotenv import load_dotenv
@@ -14,6 +13,8 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
+from statemanager import state_manager, task_config_manager
+
 
 # Constants for environment variable keys
 APP_USERNAME = 'APP_USERNAME'
@@ -70,45 +71,7 @@ STATE_FILE = os.getenv('STATE_FILE', 'household_state.json')
 PORT = int(os.getenv('PORT', 8080))
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
-def init_state_file():
-    """Initialize state file if it doesn't exist"""
-    default_state = {
-        "milou": [False] * 7,
-        "luca": [False] * 7, 
-        "general": [False] * 2
-    }
-    
-    if not os.path.exists(STATE_FILE):
-        logger.info(f"Creating new state file: {STATE_FILE}")
-        with open(STATE_FILE, 'w') as f:
-            json.dump(default_state, f)
-    else:
-        logger.info(f"Using existing state file: {STATE_FILE}")
 
-def load_state():
-    """Load state from JSON file with error handling"""
-    try:
-        with open(STATE_FILE, 'r') as f:
-            state = json.load(f)
-            logger.info("State loaded successfully")
-            return state
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error(f"Error loading state: {e}")
-        # Return default state and recreate file
-        init_state_file()
-        return load_state()
-
-def save_state(state):
-    """Save state to JSON file with error handling"""
-    try:
-        with open(STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
-            logger.info("State saved successfully")
-        return True
-    except Exception as e:
-        logger.error(f"Error saving state: {e}")
-        return False
-    
 class LoginForm(FlaskForm):
     """Form for user login"""
 
@@ -149,17 +112,86 @@ def index():
     """Serve the main HTML file"""
     return send_from_directory('static', 'index.html')
 
+@app.route('/config')
+@login_required
+def config_page():
+    """Serve the configuration page"""
+    return send_from_directory('static', 'configpage.html')
+
 @app.route('/<path:filename>')
 def static_files(filename):
     """Serve static files (CSS, JS, etc.)"""
     return send_from_directory('static', filename)
 
 # API Endpoints
+@app.route('/api/config', methods=['GET'])
+@login_required
+def get_config():
+    """Get current task configuration"""
+    try:
+        config = task_config_manager.content
+        return jsonify({
+            'success': True,
+            'data': config
+        })
+    except Exception as e:
+        logger.error(f"Error getting config: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/config', methods=['POST'])
+@login_required
+def update_config():
+    """Update task configuration"""
+    try:
+        new_config = request.get_json()
+        
+        if not new_config:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided'
+            }), 400
+        
+        # Validate config structure (basic validation)
+        required_keys = ['users', 'generalTasks', 'personalTasks']
+        if not all(key in new_config for key in required_keys):
+            return jsonify({
+                'success': False,
+                'error': f'Missing required keys. Expected: {required_keys}'
+            }), 400
+        
+        # Save new configuration
+        task_config_manager.content = new_config
+        success = task_config_manager.save()
+        
+        if success:
+            # Reset state to match new configuration
+            state_manager.reset_to_config()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Configuration updated successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to save configuration'
+            }), 500
+
+    except Exception as e:
+        logger.error(f"Error updating config: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/api/state', methods=['GET'])
 def get_state():
     """Get current application state"""
     try:
-        state = load_state()
+        state = state_manager.load_state()
         return jsonify({
             'success': True,
             'data': state
@@ -191,7 +223,7 @@ def update_state():
                 'error': f'Missing required keys. Expected: {required_keys}'
             }), 400
         
-        success = save_state(new_state)
+        success = state_manager.save_state(new_state)
         if success:
             return jsonify({
                 'success': True,
@@ -212,26 +244,15 @@ def update_state():
 
 @app.route('/api/reset', methods=['POST'])
 def reset_state():
-    """Reset application state to default"""
+    """Reset application state to default based on current configuration"""
     try:
-        default_state = {
-            "milou": [False] * 7,
-            "luca": [False] * 7,
-            "general": [False] * 2
-        }
+        default_state = state_manager.reset_to_config()
         
-        success = save_state(default_state)
-        if success:
-            return jsonify({
-                'success': True,
-                'message': 'State reset successfully',
-                'data': default_state
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to reset state'
-            }), 500
+        return jsonify({
+            'success': True,
+            'message': 'State reset successfully',
+            'data': default_state
+        })
             
     except Exception as e:
         logger.error(f"Error resetting state: {e}")
@@ -250,8 +271,9 @@ def health_check():
 
 if __name__ == '__main__':
     # Initialize state file on startup
-    init_state_file()
-    
+    task_config_manager._init_file()
+    state_manager._init_file()
+
     logger.info(f"Starting Flask app on port {PORT}")
     logger.info(f"Debug mode: {DEBUG}")
     logger.info(f"State file: {STATE_FILE}")

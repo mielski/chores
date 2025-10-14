@@ -4,22 +4,25 @@ A simple web application for tracking household tasks between family members wit
 
 ## Features
 
-- ✅ Track tasks for multiple family members (Luca and Milou)
-- 📊 Progress bars showing task completion
-- 🎉 Celebratory messages for completed tasks
+- ✅ Track tasks for multiple family members with configurable weekly goals
+- 📊 Progress bars showing task completion with customizable colors
+- 🎉 Celebratory messages for completed tasks with configurable messages
 - 💾 Persistent state shared across all devices on the network
 - 📱 Mobile-friendly responsive design
 - 🔄 Real-time state synchronization
 - 🔒 Protected with simple user/password authentication
+- 🌍 Web-based configuration interface for full customization
+- ⚙️ Customizable UI themes and tasks
 
 ## Architecture
 
 The application consists of:
 
-- **Frontend**: HTML/CSS/JavaScript single-page application
-- **Backend**: Flask API for state management
-- **Storage**: Simple JSON file for state persistence
+- **Frontend**: HTML/CSS/JavaScript single-page application with dynamic configuration loading
+- **Backend**: Flask API for state and configuration management
+- **Storage**: JSON files for state persistence and configuration
 - **Deployment**: Docker container for easy deployment
+- **Configuration**: Web-based UI for customizing tasks, users, and settings
 
 ## Quick Start
 
@@ -32,7 +35,7 @@ The application consists of:
    - create a `.env` file in the root directory with the following content:
 
      ```plaintext
-     APP_SECRET=your_secret_key
+     SECRET=your_secret_key
      APP_USERNAME=your_username
      APP_PASSWORD=your_password
      ```
@@ -50,6 +53,8 @@ The application consists of:
 
 3. **Access the Application**
    - Open http://localhost:8080 in your browser
+   - Login with the credentials from your `.env` file
+   - Click the ⚙️ (settings) button to configure tasks and users
    - The app will be accessible from any device on your local network using your computer's IP address
 
 ### Option 2: Deploy to Azure Container Apps
@@ -102,15 +107,20 @@ To access the app from other devices on your local network:
 household-tracker/
 ├── Dockerfile             # Container configuration
 ├── azure.yaml             # Azure deployment configuration
-├── src
+├── src/
 │   ├── app.py              # Flask application code
-│   ├── requirements.txt     # Python dependencies
-│   └── static/
-│       ├── index.html      # Main HTML file
-│       ├── script.js        # Frontend JavaScript
-│       └── style.css        # CSS styles
+│   ├── statemanager.py     # State and configuration management
+│   ├── requirements.txt    # Python dependencies
+│   ├── task_config.json    # Configuration file (auto-generated)
+│   ├── household_state.json # State file (auto-generated)
+│   ├── static/
+│   │   ├── index.html      # Main HTML file
+│   │   ├── config.html     # Configuration interface
+│   │   ├── script.js       # Frontend JavaScript (dynamic)
+│   │   ├── config.js       # Configuration interface JavaScript
+│   │   └── style.css       # CSS styles (with dynamic colors)
 │   └── templates/
-│       └── login.html       # HTML template for login page
+│       └── login.html      # HTML template for login page
 ├── .dockerignore           # Docker ignore file
 ├── infra/
 │   ├── main.bicep         # Azure infrastructure as code
@@ -121,6 +131,9 @@ household-tracker/
 ### API Endpoints
 
 - `GET /` - Serve the main application
+- `GET /config` - Serve the configuration interface
+- `GET /api/config` - Get current app configuration
+- `POST /api/config` - Update app configuration
 - `GET /api/state` - Get current task state
 - `POST /api/state` - Update task state
 - `POST /api/reset` - Reset all tasks
@@ -128,25 +141,42 @@ household-tracker/
 
 ### State Management
 
-The application stores task state in a JSON format:
+The application uses two JSON files for data persistence:
 
+**Task Configuration (`task_config.json`):**
 ```json
 {
-  "milou": [false, false, false, false, false, false, false, ...],
-  "luca": [false, false, false, false, false, false, false, ...],
-  "general": [false, false, false, false, false, false, false, ...],
+  "users": {
+    "milou": {
+      "tasksPerWeek": 7,
+      "color": "#0ef706dc",
+      "displayName": "Milou"
+    },
+    "luca": {
+      "tasksPerWeek": 5,
+      "color": "#29b100", 
+      "displayName": "Luca"
+    }
+  },
+  "personalTasks": ["Vaatwasser", "Koken", "Boodschappen", ...],
+  "generalTasks": {
+    "count": 2,
+    "tasks": ["Huiskamer opruimen", "Takken verzorgen"]
+  },
+  "messages": ["lekker bezig! 🚀", "ga zo door! 🌟", ...]
 }
 ```
-This state is shared across all devices and persists even after the application restarts.
 
-Each element in the arrays corresponds to button states in the application, where `true` indicates done (active) and `false` indicates not done.
-
-The button states are stored in the order they appear in the HTML based on a class based query selector:
-```javascript
-const taskButtonsMilou = document.querySelectorAll("table .btn-milou");
-const taskButtonsLuca = document.querySelectorAll("table .btn-luca");
-const taskButtonsGeneral = document.querySelectorAll("table .btn-general");
+**Task State (`household_state.json`):**
+```json
+{
+  "milou": [false, false, false, false, false, false, false],
+  "luca": [false, false, false, false, false],
+  "general": [false, false]
+}
 ```
+
+The state automatically adjusts when configuration changes. For example, if you change Milou's weekly tasks from 7 to 5, the state array will be resized accordingly.
 
 ## Azure Deployment Details
 
@@ -231,46 +261,161 @@ const taskButtonsGeneral = document.querySelectorAll("table .btn-general");
    # View resource status in Azure portal
    ```
 
+## Configuration
+
+### Web-based Configuration Interface
+
+Access the configuration interface by clicking the ⚙️ (settings) button in the main application or visiting `/config` directly.
+
+**Available Configuration Options:**
+
+1. **Users Management**
+   - Add/remove family members
+   - Set individual weekly task goals (1-14 tasks per week)
+   - Customize progress bar colors
+   - Set display names
+
+2. **Personal Tasks**
+   - Add/remove personal tasks that appear in the main table
+   - Tasks are shared across all family members
+   - Examples: "Vaatwasser", "Koken", "Boodschappen"
+
+3. **General Tasks**
+   - Add/remove household tasks that don't assign to specific people
+   - Examples: "Huiskamer opruimen", "Takken verzorgen"
+
+4. **Celebration Messages**
+   - Customize the compliments shown when tasks are completed
+   - Add motivational messages in any language
+
+### Configuration Tips
+
+- **Weekly Task Goals**: Set realistic goals. If someone consistently completes more than their goal, consider increasing it.
+- **Colors**: Choose contrasting colors for better visibility, especially on mobile devices.
+- **Task Names**: Keep them short for better display on mobile screens.
+- **Reset Warning**: Changing configuration resets all current task progress.
+
 ## Customization
 
-### Adding New Tasks
+### Quick Customization via Web Interface
 
-Edit the `personalTaskNames` array in `script.js`:
+The easiest way to customize the application is through the web interface:
 
-```javascript
-const personalTaskNames = [
-  "Vaatwasser inruimen",
-  "Vaatwasser uitruimen",
-  "Koken",
-  // Add your tasks here
-];
-```
+1. Navigate to `/config` or click the ⚙️ button
+2. Modify users, tasks, or messages as needed
+3. Click "Save Configuration"
+4. Task states will automatically reset to match the new configuration
 
-### Changing Colors
+### Advanced Customization
 
-Modify CSS variables in `style.css`:
+For advanced users who want to modify the configuration programmatically:
 
-```css
-:root {
-  --my-luca-color: #29b100;
-  --my-milou-color: #0ef706dc;
-}
-```
+#### Data Management Best Practices
 
-### Adding Family Members
+**Configuration Changes:**
+- Always use the web interface for safety and validation
+- Configuration changes automatically trigger state resets
+- Backup your `task_config.json` before major changes
 
-1. Update the HTML structure in `index.html`
-2. Add corresponding CSS classes in `style.css`
-3. Update JavaScript arrays and logic in `script.js`
-4. Modify the default state in `app.py`
+**State Management:**
+- The application automatically handles state resizing when configuration changes
+- If you add a user, their state starts with all tasks incomplete
+- If you reduce someone's weekly tasks, excess completed tasks are removed
+- If you increase someone's weekly tasks, new tasks start as incomplete
+
+**File Locations:**
+- Configuration: `src/task_config.json` (create your own or let app generate defaults)
+- State: `src/household_state.json` (automatically managed)
+- Both files are automatically created if missing
+
+### Migrating from Static Configuration
+
+If you're upgrading from a previous version with hardcoded tasks:
+
+1. Start the application - it will create default configuration files
+2. Use the web interface to recreate your previous task setup
+3. The new system is fully backward compatible
+
+## Development Environment Setup
+
+For developers wanting to contribute or modify the application:
+
+1. **Clone and Setup**
+   ```bash
+   git clone <repository-url>
+   cd household-tracker
+   python -m venv .venv
+   source .venv/bin/activate  # Linux/Mac
+   # or
+   .venv\Scripts\activate     # Windows
+   pip install -r src/requirements.txt
+   ```
+
+2. **Environment Variables**
+   Create a `.env` file with:
+   ```plaintext
+   SECRET=your-development-secret-key
+   APP_USERNAME=admin
+   APP_PASSWORD=password
+   DEBUG=true
+   ```
+
+3. **Run Development Server**
+   ```bash
+   cd src
+   python app.py
+   ```
+
+4. **Access Development Features**
+   - Main app: http://localhost:8080
+   - Configuration: http://localhost:8080/config
+   - API docs: Check the API endpoints section above
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test locally using `deploy-local.ps1`
-5. Submit a pull request
+We welcome contributions! Here's how to get started:
+
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Set up development environment** (see Development Environment Setup above)
+4. **Make your changes**
+   - For configuration features: Test with the web interface
+   - For backend changes: Test API endpoints with different configurations
+   - For frontend changes: Test with multiple users and task configurations
+5. **Test thoroughly**
+   ```bash
+   # Test locally with Docker
+   .\deploy-local.ps1
+
+   # Test different configurations through the web interface
+   # Test state persistence across restarts
+   ```
+6. **Submit a pull request**
+
+### Development Guidelines
+
+- **Configuration Changes**: Always ensure backward compatibility
+- **State Management**: Test state migration scenarios (adding/removing users, changing task counts)
+- **Frontend**: Ensure responsive design works with different numbers of users and tasks
+- **API**: Validate input data and provide meaningful error messages
+- **Documentation**: Update README.md for new features
+
+### Common Development Tasks
+
+**Adding a New Configuration Option:**
+1. Update `TaskConfigManager` default configuration in `statemanager.py`
+2. Add UI controls in `config.html` and `config.js`
+3. Update validation in the Flask API
+4. Test configuration persistence and state adaptation
+
+**Adding a New API Endpoint:**
+1. Add route in `app.py`
+2. Add authentication if needed (`@login_required`)
+3. Add error handling and logging
+4. Update API documentation in README
 
 ## License
 
