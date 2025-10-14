@@ -152,15 +152,6 @@ class StateManager(BaseJsonManager):
         return default_state
 
 
-class ConfigManager(BaseJsonManager):
-    def __init__(self):
-        default_config = {
-            "username": "admin",
-            "password": "password"
-        }
-        super().__init__('config.json', default_config)
-
 # Initialize managers
 task_config_manager = TaskConfigManager()
 state_manager = StateManager()
-config_manager = ConfigManager()
