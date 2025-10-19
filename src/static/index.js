@@ -32,14 +32,13 @@ class ProgressBar {
         () => (this.progressBar.innerText = progress),
         2000
       );
+      if (progress === "100%") {celebrationBurst()};
     } else {
       this.progressBar.innerText = progress;
     }
   }
 }
 
-// Global configuration loaded from API
-console.log("App config at start:", currentConfig);
 
 // Default fallback values
 const defaultComplimentjes = [
@@ -57,6 +56,20 @@ const defaultComplimentjes = [
   "gewoon geweldig! 🏆",
 ];
 
+
+
+// Initialize app configuration and then generate table
+async function initializeApp() {
+  console.log("Initializing app, current config:", currentConfig);
+
+  await loadAppConfig();
+  console.log("App config after loading:", currentConfig);
+  setupProgressBars();
+  generateTaskTable();
+  setupEventListeners();
+  updateApp();
+}
+
 // Load configuration from API
 async function loadAppConfig() {
   // wait for the configuration to be ready
@@ -69,18 +82,6 @@ async function loadAppConfig() {
     console.error("Error loading configuration:", error);
   }
 }
-
-// Initialize app configuration and then generate table
-async function initializeApp() {
-  console.log("Initializing app, current config:", currentConfig);
-
-  await loadAppConfig();
-  console.log("App config after loading:", currentConfig);
-  generateTaskTable();
-  setupEventListeners();
-  updateApp();
-}
-
 /* High level functions of the app */
 
 // setup of the initial table
@@ -121,10 +122,10 @@ function generateTaskTable() {
   tableTemplateRow.remove(); // remove the template element
 
   // Update CSS colors for users
-  updateUserColors();
+  _updateUserColors();
 }
 
-function updateUserColors() {
+function _updateUserColors() {
   // Create dynamic CSS for user colors
   const style = document.createElement("style");
   let css = "";
@@ -153,34 +154,32 @@ function updateUserColors() {
 
   // Update progress bar labels
   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    const progressElement = document.getElementById(`progress-${userId}`);
-    if (
-      progressElement &&
-      progressElement.parentElement &&
-      progressElement.parentElement.previousElementSibling
-    ) {
-      progressElement.parentElement.previousElementSibling.textContent =
-        userConfig.displayName;
-    }
+    const label =
+      window.progressBars[userId].progressBar?.parentElement
+        ?.previousElementSibling;
+    if (label) label.textContent = userConfig.displayName;
   }
 }
-// setup of the flow
-function setupEventListeners() {
-  // references to progress bars and buttons used in functions
-  const taskButtonsGeneral = document.querySelectorAll("table .general-task");
-  const buttonReset = document.getElementById("reset");
 
+function setupProgressBars() {
   // Create progress bars for each user
-  const progressBars = {};
-  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
+  window.progressBars = {};
+    for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     const progressElement = document.getElementById(`progress-${userId}`);
     if (progressElement) {
-      progressBars[userId] = new ProgressBar(
+      window.progressBars[userId] = new ProgressBar(
         progressElement,
         userConfig.tasksPerWeek
       );
     }
   }
+}
+
+// setup of the flow
+function setupEventListeners() {
+  // references to progress bars and buttons used in functions
+  const taskButtonsGeneral = document.querySelectorAll("table .general-task");
+  const buttonReset = document.getElementById("reset");
 
   // Event listeners for user buttons
   Object.keys(currentConfig.users).forEach((userId) => {
@@ -190,9 +189,9 @@ function setupEventListeners() {
         let countChange = button.classList.contains("active") ? -1 : 1;
         button.classList.toggle("active");
 
-        if (progressBars[userId]) {
-          progressBars[userId].done += countChange;
-          progressBars[userId].updateProgress(countChange === 1);
+        if (window.progressBars[userId]) {
+          window.progressBars[userId].done += countChange;
+          window.progressBars[userId].updateProgress(countChange === 1);
         }
 
         if (countChange === 1) {
@@ -216,7 +215,7 @@ function setupEventListeners() {
       button.innerText = isActive ? " 🎉 " : "...";
       if (isActive) {
         // Big celebration for general tasks
-        celebrationBurst();
+        sideConfetti("both");
       }
       storeState();
     });
@@ -282,66 +281,67 @@ async function storeState(reset = false) {
 
 async function updateApp() {
   // synchronize button status with task state from backend API
+  let storedButtonStates = {};
   try {
     const response = await fetch("/api/state");
     const result = await response.json();
+    storedButtonStates = result.data;
 
     if (!result.success) {
-      console.error("Failed to load state:", result.error);
+      console.error("Unsuccessful in loading /api/state:", result.error);
       return;
     }
-
-    const storedButtonStates = result.data;
-
-    function applyStateToButtonList(buttonNodes, isActiveArray) {
-      // sets buttons to active based on state data
-      isActiveArray.forEach((value, index) => {
-        if (buttonNodes[index]) {
-          value
-            ? buttonNodes[index].classList.add("active")
-            : buttonNodes[index].classList.remove("active");
-        }
-      });
-    }
-
-    // Apply state for each user
-    for (const userId of Object.keys(currentConfig.users)) {
-      if (storedButtonStates[userId]) {
-        const userButtons = document.querySelectorAll(`.btn-${userId}`);
-        applyStateToButtonList(userButtons, storedButtonStates[userId]);
-
-        // Update progress bars
-        if (window.progressBars && window.progressBars[userId]) {
-          window.progressBars[userId].done = storedButtonStates[userId].filter(
-            (x) => x
-          ).length;
-          window.progressBars[userId].updateProgress();
-        }
-      }
-    }
-
-    // Apply state for general tasks
-    if (storedButtonStates.general) {
-      const generalButtons = document.querySelectorAll(".general-task");
-      applyStateToButtonList(generalButtons, storedButtonStates.general);
-
-      // Update general button text
-      generalButtons.forEach((button) => {
-        button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
-      });
-    }
-
-    console.log("State loaded:", storedButtonStates);
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Error loading state:", error);
-    // Fallback to default state
     for (const userId of Object.keys(currentConfig.users)) {
       if (window.progressBars && window.progressBars[userId]) {
         window.progressBars[userId].done = 0;
         window.progressBars[userId].updateProgress();
       }
     }
+    return;
   }
+  
+  console.log("updateApp - state loaded:", storedButtonStates);
+
+  function applyStateToButtonList(buttonNodes, isActiveArray) {
+    // sets buttons to active based on state data
+    isActiveArray.forEach((value, index) => {
+      if (buttonNodes[index]) {
+        value
+          ? buttonNodes[index].classList.add("active")
+          : buttonNodes[index].classList.remove("active");
+      }
+    });
+  }
+
+  // Apply state for each user
+  for (const userId of Object.keys(currentConfig.users)) {
+    if (storedButtonStates[userId]) {
+      const userButtons = document.querySelectorAll(`.btn-${userId}`);
+      applyStateToButtonList(userButtons, storedButtonStates[userId]);
+
+      // Update progress bars
+      if (window.progressBars && window.progressBars[userId]) {
+        window.progressBars[userId].done = storedButtonStates[userId].filter(
+          (x) => x
+        ).length;
+        window.progressBars[userId].updateProgress();
+      }
+    }
+  }
+
+  if (storedButtonStates.general) {
+    const generalButtons = document.querySelectorAll(".general-task");
+    // Apply state for general tasks
+    applyStateToButtonList(generalButtons, storedButtonStates.general);
+    // Update general button text
+    generalButtons.forEach((button) => {
+      button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
+    });
+  }
+
 }
 
 // Confetti utility functions
