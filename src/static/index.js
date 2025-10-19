@@ -1,8 +1,6 @@
 // project configuration constants
 "use strict";
 
-
-
 class ProgressBar {
   // Class to handle the progress bar updates
   // It takes an HTML element and the total number of tasks as parameters
@@ -43,7 +41,6 @@ class ProgressBar {
 // Global configuration loaded from API
 console.log("App config at start:", currentConfig);
 
-
 // Default fallback values
 const defaultComplimentjes = [
   "lekker bezig! 🚀",
@@ -62,7 +59,6 @@ const defaultComplimentjes = [
 
 // Load configuration from API
 async function loadAppConfig() {
-
   // wait for the configuration to be ready
   // log errors and use fallback if needed
   // do not block the caller, so no await or return here!
@@ -70,15 +66,14 @@ async function loadAppConfig() {
     const result = await configReady;
     console.log("promise result:", result);
   } catch (error) {
-    console.error('Error loading configuration:', error);
+    console.error("Error loading configuration:", error);
   }
-    
 }
 
 // Initialize app configuration and then generate table
 async function initializeApp() {
   console.log("Initializing app, current config:", currentConfig);
-  
+
   await loadAppConfig();
   console.log("App config after loading:", currentConfig);
   generateTaskTable();
@@ -101,10 +96,10 @@ function generateTaskTable() {
     row.firstElementChild.textContent = taskname;
     tableBody.appendChild(row);
   }
-  
+
   // Add general tasks first
   currentConfig.generalTasks.forEach((taskName) => {
-    const row = document.createElement('tr');
+    const row = document.createElement("tr");
     row.innerHTML = `
       <td scope="row">${taskName}</td>
       <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
@@ -117,23 +112,23 @@ function generateTaskTable() {
     `;
     tableBody.insertBefore(row, tableTemplateRow);
   });
-  
+
   // Add personal tasks
   currentConfig.personalTasks.forEach((taskName) => {
     addRow(taskName);
   });
-  
+
   tableTemplateRow.remove(); // remove the template element
-  
+
   // Update CSS colors for users
   updateUserColors();
 }
 
 function updateUserColors() {
   // Create dynamic CSS for user colors
-  const style = document.createElement('style');
-  let css = '';
-  
+  const style = document.createElement("style");
+  let css = "";
+
   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     css += `
       #progress-${userId} {
@@ -152,15 +147,20 @@ function updateUserColors() {
       }
     `;
   }
-  
+
   style.innerHTML = css;
   document.head.appendChild(style);
-  
+
   // Update progress bar labels
   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     const progressElement = document.getElementById(`progress-${userId}`);
-    if (progressElement && progressElement.parentElement && progressElement.parentElement.previousElementSibling) {
-      progressElement.parentElement.previousElementSibling.textContent = userConfig.displayName;
+    if (
+      progressElement &&
+      progressElement.parentElement &&
+      progressElement.parentElement.previousElementSibling
+    ) {
+      progressElement.parentElement.previousElementSibling.textContent =
+        userConfig.displayName;
     }
   }
 }
@@ -170,38 +170,39 @@ function setupEventListeners() {
   const taskButtonsGeneral = document.querySelectorAll("table .general-task");
   const buttonReset = document.getElementById("reset");
 
-  
   // Create progress bars for each user
   const progressBars = {};
   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     const progressElement = document.getElementById(`progress-${userId}`);
     if (progressElement) {
-      progressBars[userId] = new ProgressBar(progressElement, userConfig.tasksPerWeek);
+      progressBars[userId] = new ProgressBar(
+        progressElement,
+        userConfig.tasksPerWeek
+      );
     }
   }
 
   // Event listeners for user buttons
-  Object.keys(currentConfig.users).forEach(userId => {
+  Object.keys(currentConfig.users).forEach((userId) => {
     const userButtons = document.querySelectorAll(`.btn-${userId}`);
     userButtons.forEach((button) => {
       button.addEventListener("click", () => {
         let countChange = button.classList.contains("active") ? -1 : 1;
         button.classList.toggle("active");
-        console.log(countChange);
-        
+
         if (progressBars[userId]) {
           progressBars[userId].done += countChange;
           progressBars[userId].updateProgress(countChange === 1);
         }
-        
+
         if (countChange === 1) {
           // Show confetti based on user
-          if (userId === 'milou') {
-            sideConfetti('left');
-          } else if (userId === 'luca') {
-            sideConfetti('right');
+          if (userId === "milou") {
+            sideConfetti("left");
+          } else if (userId === "luca") {
+            sideConfetti("right");
           } else {
-            sideConfetti('both');
+            sideConfetti("both");
           }
         }
         storeState();
@@ -231,50 +232,56 @@ async function storeState(reset = false) {
   // store state of the buttons to backend API
   // if reset=true stored false for all states in order to reset the app
   let stateData = {};
-  
+
   if (reset) {
-    // Create new arrays with false for all users and general tasks
-    for (const userId of Object.keys(currentConfig.users)) {
-      const userButtons = document.querySelectorAll(`.btn-${userId}`);
-      stateData[userId] = Array.from(userButtons, () => false);
+    // use the reset api
+    try {
+      const response = await fetch("/api/reset", {
+        method: "POST",
+        });
+      const result = await response.json();
+      if (!result.success) {
+        console.error("Failed to reset state:", result.error);
+      }
+    } catch (error) {
+      console.error("Error resetting state:", error);
     }
-    const generalButtons = document.querySelectorAll('.general-task');
-    stateData.general = Array.from(generalButtons, () => false);
   } else {
+    // gather current state from buttons and use the save api
     const isActive = (x) => x.classList.contains("active");
-    
+
     // Store state for each user
     for (const userId of Object.keys(currentConfig.users)) {
       const userButtons = document.querySelectorAll(`.btn-${userId}`);
       stateData[userId] = [...userButtons].map(isActive);
     }
-    
-    // Store state for general tasks
-    const generalButtons = document.querySelectorAll('.general-task');
-    stateData.general = [...generalButtons].map(isActive);
-  }
-  
-  try {
-    const response = await fetch("/api/state", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(stateData),
-    });
 
-    const result = await response.json();
-    if (!result.success) {
-      console.error("Failed to save state:", result.error);
+    // Store state for general tasks
+    const generalButtons = document.querySelectorAll(".general-task");
+    stateData.general = [...generalButtons].map(isActive);
+
+    try {
+      const response = await fetch("/api/state", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(stateData),
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        console.error("Failed to save state:", result.error);
+      }
+      console.log("State stored successfully:", stateData);
+    } catch (error) {
+      console.error("Error storing state:", error);
     }
-    console.log("State stored successfully:", stateData);
-  } catch (error) {
-    console.error("Error storing state:", error);
   }
 }
 
 async function updateApp() {
-  // Load state from backend API
+  // synchronize button status with task state from backend API
   try {
     const response = await fetch("/api/state");
     const result = await response.json();
@@ -302,10 +309,12 @@ async function updateApp() {
       if (storedButtonStates[userId]) {
         const userButtons = document.querySelectorAll(`.btn-${userId}`);
         applyStateToButtonList(userButtons, storedButtonStates[userId]);
-        
+
         // Update progress bars
         if (window.progressBars && window.progressBars[userId]) {
-          window.progressBars[userId].done = storedButtonStates[userId].filter((x) => x).length;
+          window.progressBars[userId].done = storedButtonStates[userId].filter(
+            (x) => x
+          ).length;
           window.progressBars[userId].updateProgress();
         }
       }
@@ -313,16 +322,16 @@ async function updateApp() {
 
     // Apply state for general tasks
     if (storedButtonStates.general) {
-      const generalButtons = document.querySelectorAll('.general-task');
+      const generalButtons = document.querySelectorAll(".general-task");
       applyStateToButtonList(generalButtons, storedButtonStates.general);
-      
+
       // Update general button text
       generalButtons.forEach((button) => {
         button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
       });
     }
 
-    console.log('State loaded:', storedButtonStates);
+    console.log("State loaded:", storedButtonStates);
   } catch (error) {
     console.error("Error loading state:", error);
     // Fallback to default state
@@ -343,36 +352,36 @@ function createConfetti(options = {}) {
     origin: { y: 0.6 },
     angle: 90,
     startVelocity: 45,
-    colors: ['#bb0000', '#ffffff', '#00bb00', '#0000bb', '#bbbb00']
+    colors: ["#bb0000", "#ffffff", "#00bb00", "#0000bb", "#bbbb00"],
   };
-  
+
   const config = { ...defaults, ...options };
-  
+
   confetti(config);
 }
 
-function sideConfetti(side = 'both') {
+function sideConfetti(side = "both") {
   const leftConfig = {
     particleCount: 50,
     angle: 60,
     spread: 55,
     origin: { x: 0, y: 0.6 },
-    startVelocity: 45
+    startVelocity: 45,
   };
-  
+
   const rightConfig = {
     particleCount: 50,
     angle: 120,
     spread: 55,
     origin: { x: 1, y: 0.6 },
-    startVelocity: 45
+    startVelocity: 45,
   };
-  
-  if (side === 'left' || side === 'both') {
+
+  if (side === "left" || side === "both") {
     createConfetti(leftConfig);
   }
-  
-  if (side === 'right' || side === 'both') {
+
+  if (side === "right" || side === "both") {
     createConfetti(rightConfig);
   }
 }
@@ -382,23 +391,23 @@ function celebrationBurst() {
   createConfetti({
     particleCount: 100,
     spread: 70,
-    origin: { y: 0.6 }
+    origin: { y: 0.6 },
   });
-  
-  setTimeout(() => sideConfetti('both'), 250);
-  
+
+  setTimeout(() => sideConfetti("both"), 250);
+
   setTimeout(() => {
     createConfetti({
       particleCount: 50,
       angle: 60,
       spread: 55,
-      origin: { x: 0 }
+      origin: { x: 0 },
     });
     createConfetti({
       particleCount: 50,
       angle: 120,
       spread: 55,
-      origin: { x: 1 }
+      origin: { x: 1 },
     });
   }, 500);
 }
