@@ -20,7 +20,7 @@ param resourceToken string = toLower(uniqueString(subscription().id, resourceGro
 param appSecret string
 
 @description('Username for application login')
-param appUsername string = 'admin'
+param appUsername string
 
 @description('Password for application login')
 @secure()
