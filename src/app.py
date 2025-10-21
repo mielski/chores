@@ -129,7 +129,7 @@ def static_files(filename):
 def get_config():
     """Get current task configuration"""
     try:
-        config = task_config_manager.content
+        config = task_config_manager.load()
         return jsonify({
             'success': True,
             'data': config
@@ -163,12 +163,11 @@ def update_config():
             }), 400
         
         # Save new configuration
-        task_config_manager.content = new_config
-        success = task_config_manager.save()
+        success = task_config_manager.save(new_config)
         
         if success:
-            # Reset state to match new configuration
-            state_manager.reset_to_config()
+            # Reset task state in case the number of tasks/users changed and state is now inconsistent
+            state_manager.reset()
             
             return jsonify({
                 'success': True,
@@ -191,7 +190,7 @@ def update_config():
 def get_state():
     """Get current application state"""
     try:
-        state = state_manager.load_state()
+        state = state_manager.load()
         return jsonify({
             'success': True,
             'data': state
@@ -223,7 +222,7 @@ def update_state():
                 'error': f'Missing required keys. Expected: {required_keys}'
             }), 400
         
-        success = state_manager.save_state(new_state)
+        success = state_manager.save(new_state)
         if success:
             return jsonify({
                 'success': True,
@@ -246,7 +245,7 @@ def update_state():
 def reset_state():
     """Reset application state to default based on current configuration"""
     try:
-        default_state = state_manager.reset_to_config()
+        default_state = state_manager.reset()
         
         return jsonify({
             'success': True,

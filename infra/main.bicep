@@ -20,7 +20,7 @@ param resourceToken string = toLower(uniqueString(subscription().id, resourceGro
 param appSecret string
 
 @description('Username for application login')
-param appUsername string = 'admin'
+param appUsername string
 
 @description('Password for application login')
 @secure()
@@ -192,11 +192,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               secretRef: 'app-secret'
             }
             {
-              name: 'USERNAME'
+              name: 'APP_USERNAME'
               value: appUsername
             }
             {
-              name: 'PASSWORD'
+              name: 'APP_PASSWORD'
               secretRef: 'app-password'
             }
           ]
