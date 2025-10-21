@@ -192,11 +192,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               secretRef: 'app-secret'
             }
             {
-              name: 'USERNAME'
+              name: 'APP_USERNAME'
               value: appUsername
             }
             {
-              name: 'PASSWORD'
+              name: 'APP_PASSWORD'
               secretRef: 'app-password'
             }
           ]
