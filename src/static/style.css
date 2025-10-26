@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap");
 
 * {
   box-sizing: border-box;
 }
-
 
 :root {
   --my-luca-color: #29b100;
@@ -15,11 +14,11 @@
 }
 
 #progress-luca {
-  background-color: var(--my-luca-color)
+  background-color: var(--my-luca-color);
 }
 
 #progress-milou {
-  background-color: var(--my-milou-color)
+  background-color: var(--my-milou-color);
 }
 
 .btn-luca {
@@ -61,4 +60,24 @@
 
 body {
   position: relative;
+}
+
+/* Reset control: flow normally on small screens, position absolute on md and larger */
+.main-buttons-control {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  border: black 1px solid;
+  border-radius: 5px;
+  padding: 0.25rem 0.5rem;
+  background-color: white;
+}
+
+@media (min-width: 768px) {
+  .main-buttons-control {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 20;
+  }
 }

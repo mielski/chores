@@ -33,7 +33,7 @@
         </div>
       </div>
     </div>
-
+    <div class="overflow-x-auto">
     <table class="table table-striped">
       <thead>
         <tr>
@@ -121,10 +121,13 @@
         </tr>
       </tbody>
     </table>
-    <div id="reset" class="d-flex m-3 position-absolute top-0 end-0">
-      <a class="btn btn-sm btn-secondary me-2" href="/config">⚙️</a>
-      <button class="btn btn-sm btn-danger">wissen</button>
-      <a class="btn btn-sm btn-light ms-2" href="/logout">👟</a>
+    </div>
+    <div class="main-buttons-control d-flex m-3">
+      <a role="button" class="btn btn-sm btn-secondary me-2" href="/config">
+        ⚙️<span class="visually-hidden">Settings</span>
+      </a>
+      <button id="reset" class="btn btn-sm btn-danger">wissen</button>
+      <a role="button" class="btn btn-sm btn-light ms-2" href="/logout">👟</a>
     </div>
 
   </div>
