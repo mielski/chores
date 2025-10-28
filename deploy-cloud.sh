@@ -10,7 +10,7 @@ RESOURCE_GROUP="household-tracker-rg"
 LOCATION="EastUS"
 CONTAINERAPPS_ENV="household-tracker-env"
 CONTAINERAPP_NAME="household-tracker-app"
-DOCKERHUB_REPO="mielski/household-web-app"
+DOCKERHUB_REPO="household-web-app"
 IMAGE_TAG="v1.0.0"
 IMAGE_NAME="$DOCKERHUB_USERNAME/$DOCKERHUB_REPO:$IMAGE_TAG"
 # Load `.env` if present (allows hiding values during local runs). The script prefers
@@ -38,6 +38,8 @@ fi
 
 # Step 1: Build the Docker image
 echo "Building Docker image..."
+
+echo $IMAGE_NAME
 docker build -t $IMAGE_NAME .
 if [ $? -ne 0 ]; then
     echo "Docker build failed!"
@@ -52,6 +54,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo "Docker image pushed successfully to Docker Hub: $IMAGE_NAME"  
+
+# exit here for testing
+exit 0
 
 # Step 3: Deploy to Azure Container Apps using Azure Developer CLI (azd)
 # Make sure you have azd installed and logged in
