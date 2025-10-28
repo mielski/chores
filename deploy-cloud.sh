@@ -10,15 +10,29 @@ RESOURCE_GROUP="household-tracker-rg"
 LOCATION="EastUS"
 CONTAINERAPPS_ENV="household-tracker-env"
 CONTAINERAPP_NAME="household-tracker-app"
-# Set your Docker Hub username here. Do NOT use 'your_dockerhub_username' in production!
-DOCKERHUB_USERNAME="your_dockerhub_username"  # <-- CHANGE THIS to your actual Docker Hub username
-DOCKERHUB_REPO="household-tracker"
+DOCKERHUB_REPO="mielski/household-web-app"
 IMAGE_TAG="v1.0.0"
 IMAGE_NAME="$DOCKERHUB_USERNAME/$DOCKERHUB_REPO:$IMAGE_TAG"
+# Load `.env` if present (allows hiding values during local runs). The script prefers
+# real environment variables (useful for CI); if none are set it will fall back to
+# variables defined in `.env` (e.g. DOCKERHUB_USERNAME) or a safe placeholder.
+if [ -f .env ]; then
+    echo "Loading .env file..."
+    # Export all variables from .env into the environment for the script
+    set -o allexport
+    # shellcheck disable=SC1091
+    source .env
+    set +o allexport
+fi
+
+# Get Docker Hub username from environment or .env; fall back to placeholder
+# Prefer DOCKERHUB_USERNAME, but also accept `docker_username` which may exist in .env
+DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME:-${docker_username:-not_set}}"
+
 
 # Prevent accidental use of placeholder Docker Hub username
-if [ "$DOCKERHUB_USERNAME" = "your_dockerhub_username" ]; then
-    echo "ERROR: Please set DOCKERHUB_USERNAME to your actual Docker Hub username in deploy-cloud.sh"
+if [ "$DOCKERHUB_USERNAME" = "not_set" ]; then
+    echo "ERROR: Please set DOCKERHUB_USERNAME (export as env var or add to .env) to your actual Docker Hub username"
     exit 1
 fi
 
