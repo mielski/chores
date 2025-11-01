@@ -72,11 +72,6 @@ echo "Build/push complete. To deploy a specific image, pass $COMMIT_TAG into you
 # Step 3: Deploy to Azure Container Apps using Azure Developer CLI (azd)
 # Make sure you have azd installed and logged in
 # Also ensure Docker Desktop is running
-# Check if azd is installed
-if ! command -v azd &> /dev/null; then
-    echo "ERROR: azd (Azure Developer CLI) is not installed. Please install it before running this script."
-    exit 1
-fi
 
 echo "Application deployed successfully to Azure Container Apps."
 echo "Please ensure you are using the correct Azure subscription and environment for deployment."
