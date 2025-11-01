@@ -76,7 +76,7 @@ echo "Build/push complete. To deploy a specific image, pass $COMMIT_TAG into you
 echo "Application deployed successfully to Azure Container Apps."
 echo "Please ensure you are using the correct Azure subscription and environment for deployment."
 azd env list
-azd config get subscription
+azd config get defaults.subscription
 read -p "Is the above subscription and environment correct? (y/n): " confirm
 if [ "$confirm" != "y" ]; then
     echo "Aborting deployment. Please configure azd with the correct subscription and environment."
