@@ -7,7 +7,8 @@
 set -euo pipefail
 
 # Variables (can be overridden by env or .env)
-RESOURCE_GROUP="household-tracker-rg"
+# RESOURCE_GROUP can come from the environment (or from .azure/dev/.env below)
+RESOURCE_GROUP="${RESOURCE_GROUP:-}"
 DOCKERHUB_REPO="household-web-app"
 DOCKERHUB_USERNAME='mielski'
 # Load `.env` if present (allows hiding values during local runs). The script prefers
@@ -22,7 +23,23 @@ if [ -f .env ]; then
     set +o allexport
 fi
 
+# If RESOURCE_GROUP not set in the environment, try to read it from .azure/dev/.env
+if [ -z "${RESOURCE_GROUP:-}" ]; then
+    echo "RESOURCE_GROUP not set. Exit."
+    exit 1
 
+    # if [ -f .azure/dev/.env ]; then
+    #     # strip optional surrounding quotes
+    #     RG_FROM_AZD=$(grep -E '^AZURE_RESOURCE_GROUP=' .azure/dev/.env | head -n1 | cut -d= -f2- | sed 's/^"//;s/"$//') || true
+    # fi
+    # RESOURCE_GROUP="${RG_FROM_AZD:-household-tracker-rg}"
+fi
+
+echo "Using resource group: $RESOURCE_GROUP"
+
+
+# Step 1: Build and push Docker image to Docker Hub
+echo "Starting Docker build and push process..."
 
 # Get a short commit SHA (7 chars). If git is not available, fall back to timestamp.
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -69,19 +86,31 @@ echo "Pushed: $LATEST_TAG"
 echo "Build/push complete. To deploy a specific image, pass $COMMIT_TAG into your deployment (or use the digest)."
 
 
-# Step 3: Deploy to Azure Container Apps using Azure Developer CLI (azd)
+# Step 2: Deploy to Azure Container Apps using Azure Developer CLI (azd)
 # Make sure you have azd installed and logged in
 # Also ensure Docker Desktop is running
+echo "About to deploy infrastructure (Bicep) into resource group: $RESOURCE_GROUP"
 
-echo "Application deployed successfully to Azure Container Apps."
-echo "Please ensure you are using the correct Azure subscription and environment for deployment."
-azd env list
-azd config get defaults.subscription
-read -p "Is the above subscription and environment correct? (y/n): " confirm
-if [ "$confirm" != "y" ]; then
-    echo "Aborting deployment. Please configure azd with the correct subscription and environment."
+# Ensure Azure CLI logged in and the resource group exists (create if missing)
+if ! az account show >/dev/null 2>&1; then
+    echo "You must be logged into Azure (az login). Aborting."
     exit 1
 fi
 
-echo "azd up - Deploying to Azure Container Apps... "
-azd up
+if [ "$(az group exists --name "$RESOURCE_GROUP")" != "true" ]; then
+    echo "Resource group '$RESOURCE_GROUP' does not exist. Creating with location ${AZURE_LOCATION:-westeurope}..."
+    az group create --name "$RESOURCE_GROUP" --location "${AZURE_LOCATION:-westeurope}"
+fi
+
+echo "Deploying Bicep template to resource group $RESOURCE_GROUP..."
+# Pass parameters from environment; imageName intentionally left to default (latest) per user's request
+az deployment group create \
+  --resource-group "$RESOURCE_GROUP" \
+  --template-file infra/main.bicep \
+  --parameters environmentName="${AZURE_ENV_NAME:-dev}" \
+               location="${AZURE_LOCATION:-westeurope}" \
+               appSecret="${APP_SECRET:-}" \
+               appUsername="${APP_USERNAME:-}" \
+               appPassword="${APP_PASSWORD:-}"
+
+echo "Bicep deployment finished. If you pushed a new image and want to update the running Container App directly, you can run:\n  az containerapp update --name <app-name> --resource-group $RESOURCE_GROUP --image <your-image>"
