@@ -27,7 +27,7 @@ param appUsername string
 param appPassword string
 
 @description('Full container image name to deploy (e.g. docker.io/username/repo:tag or username/repo:tag)')
-param imageName string = 'mielski/household-web-app:1:0.0'
+param imageName string = 'mielski/household-web-app:latest'
 
 // Tags for resource management
 var tags = {

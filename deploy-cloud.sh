@@ -3,17 +3,13 @@
 # cloud deployment script for Household Tracker
 # This script build the docker image, pushes it to Docker Hub, and deploys it to Azure Container Apps.
 
-set -e
+# Use stricter bash options and fewer hard-coded tags up-front
+set -euo pipefail
 
-# Variables
+# Variables (can be overridden by env or .env)
 RESOURCE_GROUP="household-tracker-rg"
-LOCATION="EastUS"
-CONTAINERAPPS_ENV="household-tracker-env"
-CONTAINERAPP_NAME="household-tracker-app"
 DOCKERHUB_REPO="household-web-app"
 DOCKERHUB_USERNAME='mielski'
-IMAGE_TAG="v1.0.0"
-IMAGE_NAME="$DOCKERHUB_USERNAME/$DOCKERHUB_REPO:$IMAGE_TAG"
 # Load `.env` if present (allows hiding values during local runs). The script prefers
 # real environment variables (useful for CI); if none are set it will fall back to
 # variables defined in `.env` (e.g. DOCKERHUB_USERNAME) or a safe placeholder.
@@ -28,24 +24,49 @@ fi
 
 
 
-# Step 1: Build the Docker image
-echo "Building Docker image..."
+# Get a short commit SHA (7 chars). If git is not available, fall back to timestamp.
+if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    SHORT_SHA=$(git rev-parse --short=7 HEAD)
+    echo "Git short SHA: $SHORT_SHA"
+else
+    echo "Warning: not in a git repo or git not available. Using timestamp fallback for tag."
+    SHORT_SHA=$(date +%Y%m%d%H%M%S)
+fi
 
-echo $IMAGE_NAME
-docker build -t $IMAGE_NAME .
-if [ $? -ne 0 ]; then
-    echo "Docker build failed!"
+# Compute repository path (allows DOCKERHUB_REPO to be 'user/repo' or just 'repo')
+if [[ "$DOCKERHUB_REPO" == */* ]]; then
+    REPO="$DOCKERHUB_REPO"
+else
+    REPO="$DOCKERHUB_USERNAME/$DOCKERHUB_REPO"
+fi
+
+COMMIT_TAG="$REPO:$SHORT_SHA"
+LATEST_TAG="$REPO:latest"
+
+echo "Will build and push the following tags:"
+echo "  commit: $COMMIT_TAG"
+echo "  latest: $LATEST_TAG"
+
+# Check docker CLI
+if ! command -v docker >/dev/null 2>&1; then
+    echo "ERROR: docker CLI not found. Please install Docker and authenticate (docker login) if pushing to Docker Hub."
     exit 1
 fi
-echo "Docker image built successfully: $IMAGE_NAME"
-# Step 2: Push the Docker image to Docker Hub
-echo "Pushing Docker image to Docker Hub..."
-docker push "$IMAGE_NAME"
-if [ $? -ne 0 ]; then
-    echo "Docker push failed!"
-    exit 1
-fi
-echo "Docker image pushed successfully to Docker Hub: $IMAGE_NAME"  
+
+echo "Building Docker image ($COMMIT_TAG)..."
+docker build -t "$COMMIT_TAG" .
+echo "Built: $COMMIT_TAG"
+
+echo "Pushing commit-tagged image to Docker Hub..."
+docker push "$COMMIT_TAG"
+echo "Pushed: $COMMIT_TAG"
+
+echo "Tagging image as latest and pushing..."
+docker tag "$COMMIT_TAG" "$LATEST_TAG"
+docker push "$LATEST_TAG"
+echo "Pushed: $LATEST_TAG"
+
+echo "Build/push complete. To deploy a specific image, pass $COMMIT_TAG into your deployment (or use the digest)."
 
 
 # Step 3: Deploy to Azure Container Apps using Azure Developer CLI (azd)
@@ -69,8 +90,3 @@ fi
 
 echo "azd up - Deploying to Azure Container Apps... "
 azd up
-if [ $? -ne 0 ]; then
-    echo "azd up failed!"
-    exit 1
-fi
-echo "Application deployed successfully to Azure Container Apps."creating automa
