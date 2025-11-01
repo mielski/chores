@@ -11,6 +11,7 @@ LOCATION="EastUS"
 CONTAINERAPPS_ENV="household-tracker-env"
 CONTAINERAPP_NAME="household-tracker-app"
 DOCKERHUB_REPO="household-web-app"
+DOCKERHUB_USERNAME='mielski'
 IMAGE_TAG="v1.0.0"
 IMAGE_NAME="$DOCKERHUB_USERNAME/$DOCKERHUB_REPO:$IMAGE_TAG"
 # Load `.env` if present (allows hiding values during local runs). The script prefers
@@ -25,16 +26,7 @@ if [ -f .env ]; then
     set +o allexport
 fi
 
-# Get Docker Hub username from environment or .env; fall back to placeholder
-# Prefer DOCKERHUB_USERNAME, but also accept `docker_username` which may exist in .env
-DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME:-${docker_username:-not_set}}"
 
-
-# Prevent accidental use of placeholder Docker Hub username
-if [ "$DOCKERHUB_USERNAME" = "not_set" ]; then
-    echo "ERROR: Please set DOCKERHUB_USERNAME (export as env var or add to .env) to your actual Docker Hub username"
-    exit 1
-fi
 
 # Step 1: Build the Docker image
 echo "Building Docker image..."
@@ -55,8 +47,6 @@ if [ $? -ne 0 ]; then
 fi
 echo "Docker image pushed successfully to Docker Hub: $IMAGE_NAME"  
 
-# exit here for testing
-exit 0
 
 # Step 3: Deploy to Azure Container Apps using Azure Developer CLI (azd)
 # Make sure you have azd installed and logged in

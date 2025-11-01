@@ -193,13 +193,11 @@ The state automatically adjusts when configuration changes. For example, if you 
 ### Cost Optimization
 
 - Uses Azure Container Apps consumption-based pricing
-- Basic Container Registry tier
 - Minimal resource allocation (0.25 CPU, 0.5GB memory)
 - Auto-scaling from 1-3 replicas based on load
 
 ### Security Features
 
-- Managed Identity for secure registry access
 - No hardcoded credentials
 - CORS policy configured for web access
 - Private networking support (optional)
