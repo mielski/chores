@@ -107,10 +107,6 @@ echo "Deploying Bicep template to resource group $RESOURCE_GROUP..."
 az deployment group create \
   --resource-group "$RESOURCE_GROUP" \
   --template-file infra/main.bicep \
-  --parameters environmentName="${AZURE_ENV_NAME:-dev}" \
-               location="${AZURE_LOCATION:-westeurope}" \
-               appSecret="${APP_SECRET:-}" \
-               appUsername="${APP_USERNAME:-}" \
-               appPassword="${APP_PASSWORD:-}"
+  --parameters environmentName="${AZURE_ENV_NAME:-dev}"
 
 echo "Bicep deployment finished. If you pushed a new image and want to update the running Container App directly, you can run:\n  az containerapp update --name <app-name> --resource-group $RESOURCE_GROUP --image <your-image>"

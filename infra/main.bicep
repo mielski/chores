@@ -15,31 +15,19 @@ param location string = resourceGroup().location
 @description('Resource token to make resource names unique')
 param resourceToken string = substring(toLower(uniqueString(subscription().id, resourceGroup().id, environmentName)), 0, 8)
 
-@description('Secret key for Flask application')
-@secure()
-param appSecret string
-
-@description('Username for application login')
-param appUsername string
-
-@description('Password for application login')
-@secure()
-param appPassword string
-
 @description('Full container image name to deploy (e.g. docker.io/username/repo:tag or username/repo:tag)')
 param imageName string = 'mielski/household-web-app:latest'
 
 // Tags for resource management
 var tags = {
-  'azd-env-name': environmentName
-  'application': 'household-tracker'
-  'component': 'infrastructure'
+  application: 'household-tracker'
 }
 
 // Variables for resource naming
 var prefix = '${environmentName}-${resourceToken}'
 var containerAppName = '${prefix}-app'
 var containerAppsEnvironmentName = '${prefix}-env'
+var keyVaultName = '${prefix}-kv'
 var logAnalyticsWorkspaceName = '${prefix}-logs'
 
 // Log Analytics Workspace for Container Apps monitoring
@@ -57,6 +45,28 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09
     }
   }
 }
+
+resource KeyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
+  name: keyVaultName
+  location: location
+  tags: tags
+  properties: {
+    tenantId: subscription().tenantId
+    sku: {
+      name: 'standard'
+      family: 'A'
+    }
+    accessPolicies: []
+    enabledForDeployment: false
+    enabledForDiskEncryption: false
+    enabledForTemplateDeployment: false
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 90
+
+
+  }
+}
+
 
 
 // Container Apps Environment
@@ -83,6 +93,9 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   tags: union(tags, {
     'azd-service-name': 'web'
   })
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
@@ -103,14 +116,22 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       // For publicly available images on Docker Hub no registry configuration
       // is required. If you use a private Docker Hub repository, add an entry
       // here and supply registry credentials as secrets.
+
       secrets: [
         {
           name: 'app-secret'
-          value: appSecret
+          keyVaultUrl: '${KeyVault.properties.vaultUri}secrets/appSecret'
+          identity: 'system'
         }
         {
           name: 'app-password'
-          value: appPassword
+          keyVaultUrl: '${KeyVault.properties.vaultUri}secrets/appPassword'
+          identity: 'system'
+        }
+        {
+          name: 'app-username'
+          keyVaultUrl: '${KeyVault.properties.vaultUri}secrets/appUsername'
+          identity: 'system'
         }
       ]
     }
@@ -136,7 +157,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'APP_USERNAME'
-              value: appUsername
+              secretRef: 'app-username'
             }
             {
               name: 'APP_PASSWORD'
@@ -166,6 +187,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     }
   }
   // No ACR dependencies
+}
+
+var roleDefinitionId = '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6' // Key Vault Secrets User
+var roleAssignmentName = guid(containerApp.id, roleDefinitionId, resourceGroup().id)
+// assign Key Vault access policy to Container App's managed identity
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: roleAssignmentName
+  properties: {
+    roleDefinitionId: roleDefinitionId
+    principalId: containerApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
 }
 
 // Output values for use by azd and other tools
