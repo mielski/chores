@@ -7,17 +7,8 @@
 
 set -euo pipefail
 
-# Load .env if present
-if [ -f .env ]; then
-  echo "Loading .env file..."
-  set -o allexport
-  # shellcheck disable=SC1091
-  source .env
-  set +o allexport
-fi
 
-DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME:-mielski}
-DOCKERHUB_REPO=${DOCKERHUB_REPO:-household-web-app}
+REPO="mielski/household-web-app"
 
 # Determine short git SHA
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -27,12 +18,6 @@ else
   SHORT_SHA=$(date +%Y%m%d%H%M%S)
 fi
 
-# Compute repo path
-if [[ "$DOCKERHUB_REPO" == */* ]]; then
-  REPO="$DOCKERHUB_REPO"
-else
-  REPO="$DOCKERHUB_USERNAME/$DOCKERHUB_REPO"
-fi
 
 COMMIT_TAG="$REPO:$SHORT_SHA"
 LATEST_TAG="$REPO:latest"
@@ -59,18 +44,18 @@ docker push "$LATEST_TAG"
 
 echo "Image pushed: $COMMIT_TAG and $LATEST_TAG"
 
-echo "If you want the Container App to pick up :latest automatically, set AZ_RESOURCE_GROUP and CONTAINER_APP_NAME and ensure 'az' is logged in."
+# echo "If you want the Container App to pick up :latest automatically, set AZ_RESOURCE_GROUP and CONTAINER_APP_NAME and ensure 'az' is logged in."
 
 # Optional: update Container App to force pull latest (if AZ vars provided)
-if [[ -n "${AZ_RESOURCE_GROUP:-}" && -n "${CONTAINER_APP_NAME:-}" ]]; then
-  if command -v az >/dev/null 2>&1; then
-    echo "Updating Container App $CONTAINER_APP_NAME in $AZ_RESOURCE_GROUP to use $LATEST_TAG"
-    az containerapp update --name "$CONTAINER_APP_NAME" --resource-group "$AZ_RESOURCE_GROUP" --image "$LATEST_TAG"
-    echo "Container App update requested (this will create a new revision using the latest image)."
-  else
-    echo "az CLI not found; skipping Container App update."
-  fi
-fi
+# if [[ -n "${AZ_RESOURCE_GROUP:-}" && -n "${CONTAINER_APP_NAME:-}" ]]; then
+#   if command -v az >/dev/null 2>&1; then
+#     echo "Updating Container App $CONTAINER_APP_NAME in $AZ_RESOURCE_GROUP to use $LATEST_TAG"
+#     az containerapp update --name "$CONTAINER_APP_NAME" --resource-group "$AZ_RESOURCE_GROUP" --image "$LATEST_TAG"
+#     echo "Container App update requested (this will create a new revision using the latest image)."
+#   else
+#     echo "az CLI not found; skipping Container App update."
+#   fi
+# fi
 
 # Output the tags for downstream automation
 echo "$COMMIT_TAG" > .last_image_tag || true
