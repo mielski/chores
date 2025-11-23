@@ -1,8 +1,11 @@
-version: '3.8'
+version: "3.8"
 
 services:
   household-tracker:
-    build: .
+    build:
+      context: .
+      args:
+        APP_VERSION: local-deployment
     ports:
       - "8080:8080"
     environment:

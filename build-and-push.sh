@@ -33,7 +33,7 @@ fi
 
 # Build and push commit-tag
 echo "Building image ($COMMIT_TAG)"
-docker build -t "$COMMIT_TAG" .
+docker build --build-arg APP_VERSION="$SHORT_SHA" -t "$COMMIT_TAG" .
 
 echo "Pushing $COMMIT_TAG"
 docker push "$COMMIT_TAG"
@@ -46,19 +46,20 @@ echo "Image pushed: $COMMIT_TAG and $LATEST_TAG"
 
 # echo "If you want the Container App to pick up :latest automatically, set AZ_RESOURCE_GROUP and CONTAINER_APP_NAME and ensure 'az' is logged in."
 
-# Optional: update Container App to force pull latest (if AZ vars provided)
-# if [[ -n "${AZ_RESOURCE_GROUP:-}" && -n "${CONTAINER_APP_NAME:-}" ]]; then
-#   if command -v az >/dev/null 2>&1; then
-#     echo "Updating Container App $CONTAINER_APP_NAME in $AZ_RESOURCE_GROUP to use $LATEST_TAG"
-#     az containerapp update --name "$CONTAINER_APP_NAME" --resource-group "$AZ_RESOURCE_GROUP" --image "$LATEST_TAG"
-#     echo "Container App update requested (this will create a new revision using the latest image)."
-#   else
-#     echo "az CLI not found; skipping Container App update."
-#   fi
-# fi
+Optional: update Container App to force pull latest (if AZ vars provided)
+if [[ -n "${AZ_RESOURCE_GROUP:-}" && -n "${CONTAINER_APP_NAME:-}" ]]; then
+  if command -v az >/dev/null 2>&1; then
+    echo "Updating Container App $CONTAINER_APP_NAME in $AZ_RESOURCE_GROUP to use $LATEST_TAG"
+    az containerapp update --name "$CONTAINER_APP_NAME" --resource-group "$AZ_RESOURCE_GROUP" --image "$LATEST_TAG"
+    echo "Container App update requested (this will create a new revision using the latest image)."
+  else
+    echo "az CLI not found; skipping Container App update."
+  fi
+fi
 
 # Output the tags for downstream automation
 echo "$COMMIT_TAG" > .last_image_tag || true
 echo "$LATEST_TAG" > .last_image_latest || true
+
 
 exit 0

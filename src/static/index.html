@@ -129,10 +129,24 @@
       <button id="reset" class="btn btn-sm btn-danger">wissen</button>
       <a role="button" class="btn btn-sm btn-light ms-2" href="/logout">👟</a>
     </div>
+    <footer class="text-center text-muted small mt-4 mb-2">
+      <span id="app-version">Loading version...</span>
+    </footer>
 
   </div>
   <script src="config.js"></script>
   <script src="index.js"></script>
+  <script defer>
+    // Fetch and display version
+    fetch('/api/version')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('app-version').textContent = `version ${data.version}`;
+      })
+      .catch(() => {
+        document.getElementById('app-version').textContent = '';
+      });
+  </script>
 </body>
 
 </html>

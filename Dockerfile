@@ -1,6 +1,9 @@
 # Use Python 3.11 slim image for smaller size
 FROM python:3.11-slim
 
+# Build argument for version (commit hash)
+ARG APP_VERSION=unknown
+
 # Set working directory
 WORKDIR /app
 
@@ -33,6 +36,7 @@ ENV PYTHONUNBUFFERED=1
 ENV SECRET=""
 ENV USERNAME=""
 ENV PASSWORD=""
+ENV APP_VERSION=${APP_VERSION}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
