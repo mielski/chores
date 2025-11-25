@@ -7,6 +7,17 @@
 
 set -euo pipefail
 
+# Load `.env` if present (allows hiding values during local runs). The script prefers
+# real environment variables (useful for CI); if none are set it will fall back to
+# variables defined in `.env` (e.g. DOCKERHUB_USERNAME) or a safe placeholder.
+if [ -f .env ]; then
+    echo "Loading .env file..."
+    # Export all variables from .env into the environment for the script
+    set -o allexport
+    # shellcheck disable=SC1091
+    source .env
+    set +o allexport
+fi
 
 REPO="mielski/household-web-app"
 
@@ -46,7 +57,7 @@ echo "Image pushed: $COMMIT_TAG and $LATEST_TAG"
 
 # echo "If you want the Container App to pick up :latest automatically, set AZ_RESOURCE_GROUP and CONTAINER_APP_NAME and ensure 'az' is logged in."
 
-Optional: update Container App to force pull latest (if AZ vars provided)
+# Optional: update Container App to force pull latest (if AZ vars provided)
 if [[ -n "${AZ_RESOURCE_GROUP:-}" && -n "${CONTAINER_APP_NAME:-}" ]]; then
   if command -v az >/dev/null 2>&1; then
     echo "Updating Container App $CONTAINER_APP_NAME in $AZ_RESOURCE_GROUP to use $COMMIT_TAG"

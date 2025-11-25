@@ -7,8 +7,8 @@
 set -euo pipefail
 
 # Variables (can be overridden by env or .env)
-# RESOURCE_GROUP can come from the environment (or from .azure/dev/.env below)
-RESOURCE_GROUP="${RESOURCE_GROUP:-}"
+# AZ_RESOURCE_GROUP can come from the environment (or from .azure/dev/.env below)
+RESOURCE_GROUP="${AZ_RESOURCE_GROUP:-}"
 DOCKERHUB_REPO="household-web-app"
 DOCKERHUB_USERNAME='mielski'
 # Load `.env` if present (allows hiding values during local runs). The script prefers
