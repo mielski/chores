@@ -49,8 +49,8 @@ echo "Image pushed: $COMMIT_TAG and $LATEST_TAG"
 Optional: update Container App to force pull latest (if AZ vars provided)
 if [[ -n "${AZ_RESOURCE_GROUP:-}" && -n "${CONTAINER_APP_NAME:-}" ]]; then
   if command -v az >/dev/null 2>&1; then
-    echo "Updating Container App $CONTAINER_APP_NAME in $AZ_RESOURCE_GROUP to use $LATEST_TAG"
-    az containerapp update --name "$CONTAINER_APP_NAME" --resource-group "$AZ_RESOURCE_GROUP" --image "$LATEST_TAG"
+    echo "Updating Container App $CONTAINER_APP_NAME in $AZ_RESOURCE_GROUP to use $COMMIT_TAG"
+    az containerapp update --name "$CONTAINER_APP_NAME" --resource-group "$AZ_RESOURCE_GROUP" --image "$COMMIT_TAG" >/dev/null
     echo "Container App update requested (this will create a new revision using the latest image)."
   else
     echo "az CLI not found; skipping Container App update."
