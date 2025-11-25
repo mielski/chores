@@ -23,7 +23,6 @@ MANIFEST
 taskconfig.json
 
 # Virtual environments
-.env
 .venv
 env/
 venv/
@@ -62,3 +61,8 @@ task_config.json
 *.tmp
 *.temp
 task_config.json
+
+# Environment variables
+.env
+.last_image_latest
+.last_image_tag

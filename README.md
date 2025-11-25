@@ -19,9 +19,9 @@ A simple web application for tracking household tasks between family members wit
 The application consists of:
 
 - **Frontend**: HTML/CSS/JavaScript single-page application with dynamic configuration loading
-- **Backend**: Flask API for state and configuration management
-- **Storage**: JSON files for state persistence and configuration
-- **Deployment**: Docker container for easy deployment
+- **Backend**: Flask API for state management
+- **Storage**: Simple JSON file for state persistence
+- **Deployment**: Docker container for easy deployment, using public Docker Hub registry
 - **Configuration**: Web-based UI for customizing tasks, users, and settings
 
 ## Quick Start
@@ -59,11 +59,15 @@ The application consists of:
 
 ### Option 2: Deploy to Azure Container Apps
 
+In this option, the app will be deployed to Azure Container Apps and the image will be pushed to
+the public docker hub registry.
+
 1. **Prerequisites**
 
    - Azure subscription
    - Azure CLI installed and logged in
    - Azure Developer CLI (azd) installed
+   - Docker Desktop installed and running
 
 2. **Initialize and Deploy**
 
@@ -184,20 +188,16 @@ The state automatically adjusts when configuration changes. For example, if you 
 
 - **Container App**: Hosts the application
 - **Container Apps Environment**: Provides the runtime environment
-- **Container Registry**: Stores the container image
 - **Log Analytics Workspace**: Collects application logs
-- **Managed Identity**: Provides secure access to container registry
 
 ### Cost Optimization
 
 - Uses Azure Container Apps consumption-based pricing
-- Basic Container Registry tier
 - Minimal resource allocation (0.25 CPU, 0.5GB memory)
 - Auto-scaling from 1-3 replicas based on load
 
 ### Security Features
 
-- Managed Identity for secure registry access
 - No hardcoded credentials
 - CORS policy configured for web access
 - Private networking support (optional)

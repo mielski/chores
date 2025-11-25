@@ -70,6 +70,7 @@ def load_user(user_id):
 STATE_FILE = os.getenv('STATE_FILE', 'household_state.json')
 PORT = int(os.getenv('PORT', 8080))
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
+APP_VERSION = os.getenv('APP_VERSION', 'dev')
 
 
 class LoginForm(FlaskForm):
@@ -266,6 +267,13 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'service': 'household-tracker'
+    })
+
+@app.route('/api/version', methods=['GET'])
+def get_version():
+    """Get application version"""
+    return jsonify({
+        'version': APP_VERSION
     })
 
 if __name__ == '__main__':
