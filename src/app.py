@@ -13,7 +13,6 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
-from statemanager import state_manager, task_config_manager
 
 
 # Constants for environment variable keys
@@ -26,6 +25,23 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize storage managers based on configuration
+USE_COSMOS_DB = os.getenv('USE_COSMOS_DB', 'false').lower() == 'true'
+
+if USE_COSMOS_DB:
+    try:
+        from cosmosdb_manager import create_cosmos_managers
+        logger.info("Initializing Cosmos DB storage...")
+        task_config_manager, state_manager = create_cosmos_managers(user_id="household")
+        logger.info("✅ Cosmos DB storage initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize Cosmos DB storage: {e}")
+        logger.warning("Falling back to file-based storage")
+        from statemanager import state_manager, task_config_manager
+else:
+    logger.info("Using file-based storage")
+    from statemanager import state_manager, task_config_manager
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv('SECRET')

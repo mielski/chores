@@ -1,8 +1,9 @@
 Flask==3.1.1
-Flask-CORS==4.0.0
+Flask-CORS==4.0.2
 gunicorn==22.0.0
 flask-login==0.6.3
 python-dotenv==1.1.1
 wtforms==3.2.1
 flask-wtf==1.2.2
 bootstrap-flask==2.5.0
+azure-cosmos==4.7.0
