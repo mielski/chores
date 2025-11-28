@@ -99,6 +99,7 @@ class AppTaskStateManager(BaseJsonManager):
         self.save(state)
         logger.info("State reset to match task configuration")
         logger.info(state)
+        return state  # Return the new state to match protocol
 
 
 # Initialize managers
