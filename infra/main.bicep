@@ -4,9 +4,9 @@
 targetScope = 'resourceGroup'
 
 @minLength(1)
-@maxLength(64)
+@maxLength(4)
 @description('Name of the environment')
-param environmentName string = 'household-tracker'
+param environmentName string = 'dev'
 
 @minLength(1)
 @description('Primary location for all resources')
