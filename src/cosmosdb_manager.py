@@ -66,10 +66,10 @@ class CosmosDBManager:
         logger.info(f"Cosmos DB manager initialized for database: {self.database_name}")
 
 
-class CosmosAppConfigManager:
+class CosmosConfigStore:
     """
     Manages app configuration using Cosmos DB.
-    Compatible interface with AppConfigManager.
+    Compatible interface with FileConfigStore.
     """
     
     def __init__(self, cosmos_manager: CosmosDBManager, user_id: str = "default"):
@@ -141,22 +141,22 @@ class CosmosAppConfigManager:
         self.save(self.default_content.copy())
 
 
-class CosmosAppTaskStateManager:
+class CosmosStateStore:
     """
     Manages task completion state using Cosmos DB.
-    Compatible interface with AppTaskStateManager.
+    Compatible interface with FileStateStore.
     """
     
-    def __init__(self, cosmos_manager: CosmosDBManager, config_manager: CosmosAppConfigManager, 
+    def __init__(self, cosmos_manager: CosmosDBManager, config_store: CosmosConfigStore, 
                  user_id: str = "default"):
         """
         Args:
             cosmos_manager: Initialized CosmosDBManager instance
-            config_manager: Configuration manager instance
+            config_store: Configuration store instance
             user_id: Partition key for data isolation (default: "default")
         """
         self.cosmos = cosmos_manager
-        self.config_manager = config_manager
+        self.config_store = config_store
         self.user_id = user_id
         self.container = cosmos_manager.state_container
         self.doc_id = "state"
@@ -194,7 +194,7 @@ class CosmosAppTaskStateManager:
     
     def reset(self) -> Dict[str, Any]:
         """Reset state using the app configuration to define the structure"""
-        config = self.config_manager.load()
+        config = self.config_store.load()
         state = {}
         
         # Create state for each user based on their task count
@@ -211,22 +211,22 @@ class CosmosAppTaskStateManager:
         return state
 
 
-def create_cosmos_managers(user_id: str = "default"):
+def create_cosmos_stores(user_id: str = "default"):
     """
-    Factory function to create Cosmos DB managers.
+    Factory function to create Cosmos DB stores.
     
     Args:
         user_id: Partition key for data isolation
         
     Returns:
-        Tuple of (config_manager, state_manager)
+        Tuple of (config_store, state_store)
         
     Raises:
         ImportError: If azure-cosmos is not installed
         ValueError: If Cosmos DB credentials are not configured
     """
     cosmos_manager = CosmosDBManager()
-    config_manager = CosmosAppConfigManager(cosmos_manager, user_id)
-    state_manager = CosmosAppTaskStateManager(cosmos_manager, config_manager, user_id)
+    config_store = CosmosConfigStore(cosmos_manager, user_id)
+    state_store = CosmosStateStore(cosmos_manager, config_store, user_id)
     
-    return config_manager, state_manager
+    return config_store, state_store

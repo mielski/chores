@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize storage managers using factory method
-task_config_manager, state_manager = create_storage_managers(user_id="household")
+config_store, state_store = create_storage_managers(user_id="household")
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv('SECRET')
@@ -133,7 +133,7 @@ def static_files(filename):
 def get_config():
     """Get current task configuration"""
     try:
-        config = task_config_manager.load()
+        config = config_store.load()
         return jsonify({
             'success': True,
             'data': config
@@ -167,11 +167,11 @@ def update_config():
             }), 400
         
         # Save new configuration
-        success = task_config_manager.save(new_config)
+        success = config_store.save(new_config)
         
         if success:
             # Reset task state in case the number of tasks/users changed and state is now inconsistent
-            state_manager.reset()
+            state_store.reset()
             
             return jsonify({
                 'success': True,
@@ -194,7 +194,7 @@ def update_config():
 def get_state():
     """Get current application state"""
     try:
-        state = state_manager.load()
+        state = state_store.load()
         return jsonify({
             'success': True,
             'data': state
@@ -226,7 +226,7 @@ def update_state():
                 'error': f'Missing required keys. Expected: {required_keys}'
             }), 400
         
-        success = state_manager.save(new_state)
+        success = state_store.save(new_state)
         if success:
             return jsonify({
                 'success': True,
@@ -249,7 +249,7 @@ def update_state():
 def reset_state():
     """Reset application state to default based on current configuration"""
     try:
-        default_state = state_manager.reset()
+        default_state = state_store.reset()
         
         return jsonify({
             'success': True,
@@ -287,8 +287,8 @@ def get_storage():
 
 if __name__ == '__main__':
     # Initialize state file on startup
-    task_config_manager._init_file()
-    state_manager._init_file()
+    config_store._init_file()
+    state_store._init_file()
 
     logger.info(f"Starting Flask app on port {PORT}")
     logger.info(f"Debug mode: {DEBUG}")

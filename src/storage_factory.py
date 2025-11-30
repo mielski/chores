@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 @runtime_checkable
-class ConfigManagerProtocol(Protocol):
-    """Protocol defining the interface for configuration managers."""
+class ConfigStoreProtocol(Protocol):
+    """Protocol defining the interface for configuration stores."""
     
     def load(self) -> Dict[str, Any]:
         """Load configuration data."""
@@ -29,8 +29,8 @@ class ConfigManagerProtocol(Protocol):
 
 
 @runtime_checkable
-class StateManagerProtocol(Protocol):
-    """Protocol defining the interface for state managers."""
+class StateStoreProtocol(Protocol):
+    """Protocol defining the interface for state stores."""
     
     def load(self) -> Dict[str, Any]:
         """Load state data."""
@@ -47,18 +47,18 @@ class StateManagerProtocol(Protocol):
 
 def create_storage_managers(
     user_id: str = "household"
-) -> Tuple[ConfigManagerProtocol, StateManagerProtocol]:
+) -> Tuple[ConfigStoreProtocol, StateStoreProtocol]:
     """
     Factory method to create storage managers with automatic fallback.
     
-    Attempts to create Cosmos DB managers if USE_COSMOS_DB is enabled,
+    Attempts to create Cosmos DB stores if USE_COSMOS_DB is enabled,
     otherwise falls back to file-based storage.
     
     Args:
         user_id: User identifier for Cosmos DB partition key
         
     Returns:
-        Tuple of (config_manager, state_manager) conforming to protocols
+        Tuple of (config_store, state_store) conforming to protocols
         
     Raises:
         ImportError: If required dependencies are missing (after fallback)
@@ -67,16 +67,16 @@ def create_storage_managers(
     
     if use_cosmos:
         try:
-            from cosmosdb_manager import create_cosmos_managers
+            from cosmosdb_manager import create_cosmos_stores
             logger.info("Initializing Cosmos DB storage...")
-            config_manager, state_manager = create_cosmos_managers(user_id=user_id)
+            config_store, state_store = create_cosmos_stores(user_id=user_id)
             
             # Verify they conform to protocols
-            assert isinstance(config_manager, ConfigManagerProtocol)
-            assert isinstance(state_manager, StateManagerProtocol)
+            assert isinstance(config_store, ConfigStoreProtocol)
+            assert isinstance(state_store, StateStoreProtocol)
             
             logger.info("✅ Cosmos DB storage initialized successfully")
-            return config_manager, state_manager
+            return config_store, state_store
             
         except ImportError as e:
             logger.error(f"❌ Cosmos DB dependencies missing: {e}")
@@ -88,13 +88,13 @@ def create_storage_managers(
     # Fallback to file-based storage
     logger.info("Using file-based storage")
     try:
-        from statemanager import state_manager, task_config_manager
+        from jsonfile_manager import state_store, config_store
         
         # Verify they conform to protocols
-        assert isinstance(task_config_manager, ConfigManagerProtocol)
-        assert isinstance(state_manager, StateManagerProtocol)
+        assert isinstance(config_store, ConfigStoreProtocol)
+        assert isinstance(state_store, StateStoreProtocol)
         
-        return task_config_manager, state_manager
+        return config_store, state_store
         
     except ImportError as e:
         logger.error(f"❌ File-based storage dependencies missing: {e}")
@@ -122,11 +122,11 @@ def get_storage_info() -> Dict[str, Any]:
     
     # Try to determine actual storage being used
     try:
-        config_manager, state_manager = create_storage_managers()
+        config_store, state_store = create_storage_managers()
         
         # Check the actual type
-        from cosmosdb_manager import CosmosAppConfigManager
-        if isinstance(config_manager, CosmosAppConfigManager):
+        from cosmosdb_manager import CosmosConfigStore
+        if isinstance(config_store, CosmosConfigStore):
             info['actual_storage'] = 'cosmos'
         else:
             info['actual_storage'] = 'file'
