@@ -14,6 +14,10 @@ services:
       - APP_PASSWORD=${APP_PASSWORD}
       - PORT=8080
       - STATE_FILE=/app/data/household_state.json
+      # Cosmos DB settings (optional - comment out to use file-based storage)
+      # - USE_COSMOS_DB=true
+      # - COSMOS_ENDPOINT=${COSMOS_ENDPOINT}
+      # - COSMOS_KEY=${COSMOS_KEY}
     env_file:
       - .env
     volumes:

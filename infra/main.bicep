@@ -4,9 +4,9 @@
 targetScope = 'resourceGroup'
 
 @minLength(1)
-@maxLength(64)
+@maxLength(4)
 @description('Name of the environment')
-param environmentName string = 'household-tracker'
+param environmentName string = 'dev'
 
 @minLength(1)
 @description('Primary location for all resources')
@@ -62,12 +62,99 @@ resource KeyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
     enabledForTemplateDeployment: false
     enableSoftDelete: true
     softDeleteRetentionInDays: 90
-
-
   }
 }
 
+// Azure Cosmos DB Account (Serverless for cost-effective storage)
+resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
+  name: '${prefix}-cosmos'
+  location: location
+  tags: tags
+  kind: 'GlobalDocumentDB'
+  properties: {
+    databaseAccountOfferType: 'Standard'
+    consistencyPolicy: {
+      defaultConsistencyLevel: 'Session'
+    }
+    locations: [
+      {
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: false
+      }
+    ]
+    capabilities: [
+      {
+        name: 'EnableServerless'
+      }
+    ]
+    backupPolicy: {
+      type: 'Continuous'
+      continuousModeProperties: {
+        tier: 'Continuous7Days'
+      }
+    }
+  }
+}
 
+// Cosmos DB Database
+resource cosmosDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15' = {
+  parent: cosmosAccount
+  name: 'household-tracker'
+  properties: {
+    resource: {
+      id: 'household-tracker'
+    }
+  }
+}
+
+// Cosmos DB Container for configurations
+resource cosmosConfigContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
+  parent: cosmosDatabase
+  name: 'configurations'
+  properties: {
+    resource: {
+      id: 'configurations'
+      partitionKey: {
+        paths: ['/userId']
+        kind: 'Hash'
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        automatic: true
+        includedPaths: [
+          {
+            path: '/*'
+          }
+        ]
+      }
+    }
+  }
+}
+
+// Cosmos DB Container for task states
+resource cosmosStateContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
+  parent: cosmosDatabase
+  name: 'task-states'
+  properties: {
+    resource: {
+      id: 'task-states'
+      partitionKey: {
+        paths: ['/userId']
+        kind: 'Hash'
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        automatic: true
+        includedPaths: [
+          {
+            path: '/*'
+          }
+        ]
+      }
+    }
+  }
+}
 
 // Container Apps Environment
 resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
@@ -133,6 +220,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           keyVaultUrl: '${KeyVault.properties.vaultUri}secrets/appUsername'
           identity: 'system'
         }
+        {
+          name: 'cosmos-key'
+          value: cosmosAccount.listKeys().primaryMasterKey
+        }
       ]
     }
     template: {
@@ -162,6 +253,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'APP_PASSWORD'
               secretRef: 'app-password'
+            }
+            {
+              name: 'USE_COSMOS_DB'
+              value: 'true'
+            }
+            {
+              name: 'COSMOS_ENDPOINT'
+              value: cosmosAccount.properties.documentEndpoint
+            }
+            {
+              name: 'COSMOS_KEY'
+              secretRef: 'cosmos-key'
             }
           ]
           resources: {
@@ -206,4 +309,6 @@ output RESOURCE_GROUP_ID string = resourceGroup().id
 output AZURE_CONTAINER_APPS_ENVIRONMENT_NAME string = containerAppsEnvironment.name
 output AZURE_CONTAINER_APP_NAME string = containerApp.name
 output AZURE_LOG_ANALYTICS_WORKSPACE_NAME string = logAnalyticsWorkspace.name
+output AZURE_COSMOS_DB_ACCOUNT_NAME string = cosmosAccount.name
+output AZURE_COSMOS_DB_ENDPOINT string = cosmosAccount.properties.documentEndpoint
 output WEB_URI string = 'https://${containerApp.properties.configuration.ingress.fqdn}'

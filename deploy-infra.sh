@@ -8,18 +8,18 @@ set -euo pipefail
 usage() {
   cat <<EOF
 Usage: $0 -g <resource-group> [-i <imageName>] [-e <environmentName>] [--restart]
-  -g <resource-group>    Resource group to deploy to (required)
+  -g <resource-group>    Resource group to deploy to (defaults to rg-dev-chores)
   -i <imageName>         Image name to set in the template (defaults to mielski/household-web-app:latest)
-  -e <environmentName>   environmentName parameter for bicep (defaults to 'household-tracker')
+  -e <environmentName>   environmentName parameter for bicep (defaults to 'dev')
   --restart              After deployment, update the Container App image to force a new revision (requires CONTAINER_APP_NAME env or param)
 
 Environment variables respected: DOCKERHUB_USERNAME, DOCKERHUB_REPO, CONTAINER_APP_NAME
 EOF
 }
 
-RESOURCE_GROUP=""
+RESOURCE_GROUP="rg-dev-chores"
 IMAGE_NAME=""
-ENVIRONMENT_NAME="household-tracker"
+ENVIRONMENT_NAME="dev"
 DO_RESTART=0
 
 # Parse args
@@ -33,12 +33,6 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown arg: $1"; usage; exit 1;;
   esac
 done
-
-if [[ -z "$RESOURCE_GROUP" ]]; then
-  echo "ERROR: resource group is required"
-  usage
-  exit 1
-fi
 
 # Load .env if present
 if [ -f .env ]; then

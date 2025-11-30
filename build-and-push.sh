@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build and push Docker image with commit-sha and latest tags.
-# Usage: ./scripts/build-and-push.sh
+# Usage: ./build-and-push.sh
 # Optional env vars (can be set in .env): DOCKERHUB_USERNAME, DOCKERHUB_REPO
 # Optional: to automatically update a Container App to the new :latest image after push,
 # set AZ_RESOURCE_GROUP and CONTAINER_APP_NAME (requires az CLI logged in and permission).
