@@ -13,7 +13,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
-from storage_factory import create_storage_managers
+from storage_factory import create_storage_managers, get_storage_info
 
 
 # Constants for environment variable keys
@@ -280,10 +280,15 @@ def get_version():
     })
 
 @app.route('/api/storage', methods=['GET'])
+@login_required  # Add authentication requirement
 def get_storage():
-    """Get storage backend information"""
-    from storage_factory import get_storage_info
-    return jsonify(get_storage_info())
+    """Get storage backend information (authenticated users only)"""
+
+    
+    # Only include sensitive info in debug mode or for development
+    include_sensitive = DEBUG or os.getenv('INCLUDE_STORAGE_DETAILS', 'false').lower() == 'true'
+    
+    return jsonify(get_storage_info(include_sensitive=include_sensitive))
 
 if __name__ == '__main__':
     # Initialize state file on startup

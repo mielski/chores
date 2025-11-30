@@ -6,6 +6,7 @@ storage managers with automatic fallback logic.
 """
 import os
 import logging
+import time
 from typing import Dict, Any, Tuple, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
@@ -104,27 +105,38 @@ def create_storage_managers(
         ) from e
 
 
-def get_storage_info() -> Dict[str, Any]:
+def get_storage_info(include_sensitive: bool = False) -> Dict[str, Any]:
     """
     Get information about the current storage configuration.
     
+    Args:
+        include_sensitive: Whether to include potentially sensitive configuration details
+    
     Returns:
-        Dict containing storage type, configuration, and status
+        Dict containing storage type and basic status (sanitized by default)
     """
     use_cosmos = os.getenv('USE_COSMOS_DB', 'false').lower() == 'true'
     
+    # Basic info (safe to expose)
     info = {
         'intended_storage': 'cosmos' if use_cosmos else 'file',
-        'cosmos_endpoint': os.getenv('COSMOS_ENDPOINT'),
-        'cosmos_configured': bool(os.getenv('COSMOS_ENDPOINT') and os.getenv('COSMOS_KEY')),
-        'state_file': os.getenv('STATE_FILE', 'household_state.json')
+        'timestamp': int(time.time()) if 'time' in globals() else None
     }
+    
+    # Sensitive info (only include if explicitly requested)
+    if include_sensitive:
+        endpoint = os.getenv('COSMOS_ENDPOINT', '')
+        info.update({
+            'cosmos_endpoint_domain': endpoint.split('/')[2] if endpoint.startswith('http') else None,
+            'cosmos_configured': bool(os.getenv('COSMOS_ENDPOINT') and os.getenv('COSMOS_KEY')),
+            'state_file_exists': os.path.exists(os.getenv('STATE_FILE', 'household_state.json'))
+        })
     
     # Try to determine actual storage being used
     try:
-        config_store, state_store = create_storage_managers()
+        config_store, _ = create_storage_managers()
         
-        # Check the actual type
+        # Check the actual type (safe to expose)
         from cosmosdb_manager import CosmosConfigStore
         if isinstance(config_store, CosmosConfigStore):
             info['actual_storage'] = 'cosmos'
@@ -133,6 +145,7 @@ def get_storage_info() -> Dict[str, Any]:
             
     except Exception as e:
         info['actual_storage'] = 'unknown'
-        info['error'] = str(e)
+        # Don't log the full exception details in production
+        logger.warning(f"Could not determine storage backend - {e.__class__.__name__}")
     
     return info
