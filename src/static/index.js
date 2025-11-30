@@ -3,19 +3,54 @@
 
 class ProgressBar {
   // Class to handle the progress bar updates
-  // It takes an HTML element and the total number of tasks as parameters
+  // It takes an HTML element, task indicators element and the total number of tasks as parameters
   // It has a method to update the progress bar and optionally show a compliment
-  // It also handles the timeout for showing the compliment
-  constructor(element, totalTasks) {
+  // It also handles the timeout for showing the compliment and individual task indicators
+  constructor(element, taskIndicatorsElement, totalTasks) {
     // element: HTML element for the progress bar
+    // taskIndicatorsElement: HTML element for the task indicators container
     // totalTasks: total number of tasks to complete (integer)
     this.progressBar = element;
+    this.taskIndicators = taskIndicatorsElement;
     this.done = 0;
     this.required = totalTasks;
     this.timeoutId = undefined;
+    this.initializeTaskIndicators();
   }
 
-  updateProgress(giveCompliment = false) {
+  initializeBar() {
+    // UNDER CONSTRUCTION
+    // this method will create the complete progress bar structure including the task indicators
+    const name = "Luca"; // placeholder, should be dynamic
+    template = `
+        <p class="mb-0">Luca</p>
+        <div id="progress-luca" class="progress-bar" role="progressbar" style="width: 0%;"
+          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          Description
+        </div>
+      `
+
+      // add template as new element to the parent
+      const newElement = document.createElement('div');
+      newElement.classList.add('progress', 'mb-2');
+      const parentElement = document.querySelector('.progressholders')
+
+      parentElement.appendChild(newElement);
+
+  }
+
+  initializeTaskIndicators() {
+    // Create individual task indicator boxes
+    this.taskIndicators.innerHTML = '';
+    for (let i = 0; i < this.required; i++) {
+      const indicator = document.createElement('div');
+      indicator.className = 'task-indicator';
+      indicator.dataset.taskIndex = i;
+      this.taskIndicators.appendChild(indicator);
+    }
+  }
+
+  updateProgress(giveCompliment = false, animateLastCompleted = false) {
     const complimentjes = currentConfig.messages || defaultComplimentjes;
     const randomIndex = Math.floor(Math.random() * complimentjes.length);
     const compliment = complimentjes[randomIndex];
@@ -23,6 +58,9 @@ class ProgressBar {
     const progress =
       Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
     this.progressBar.style.width = progress;
+
+    // Update task indicators
+    this.updateTaskIndicators(animateLastCompleted);
 
     if (this._timeOutId) clearTimeout(this._timeOutId);
 
@@ -36,6 +74,22 @@ class ProgressBar {
     } else {
       this.progressBar.innerText = progress;
     }
+  }
+
+  updateTaskIndicators(animateLastCompleted = false) {
+    // Update the visual state of task indicators
+    const indicators = this.taskIndicators.querySelectorAll('.task-indicator');
+    
+    indicators.forEach((indicator, index) => {
+      const isCompleted = index < this.done;
+      indicator.classList.toggle('completed', isCompleted);
+      
+      // Add pulse animation to the last completed task
+      if (animateLastCompleted && index === this.done - 1 && isCompleted) {
+        indicator.classList.add('pulse');
+        setTimeout(() => indicator.classList.remove('pulse'), 600);
+      }
+    });
   }
 }
 
@@ -166,9 +220,11 @@ function setupProgressBars() {
   window.progressBars = {};
     for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
     const progressElement = document.getElementById(`progress-${userId}`);
-    if (progressElement) {
+    const taskIndicatorsElement = document.getElementById(`task-indicators-${userId}`);
+    if (progressElement && taskIndicatorsElement) {
       window.progressBars[userId] = new ProgressBar(
         progressElement,
+        taskIndicatorsElement,
         userConfig.tasksPerWeek
       );
     }
@@ -191,7 +247,8 @@ function setupEventListeners() {
 
         if (window.progressBars[userId]) {
           window.progressBars[userId].done += countChange;
-          window.progressBars[userId].updateProgress(countChange === 1);
+          // Animate the task indicator when a task is completed
+          window.progressBars[userId].updateProgress(countChange === 1, countChange === 1);
         }
 
         if (countChange === 1) {
@@ -272,7 +329,6 @@ async function storeState(reset = false) {
       if (!result.success) {
         console.error("Failed to save state:", result.error);
       }
-      console.log("State stored successfully:", stateData);
     } catch (error) {
       console.error("Error storing state:", error);
     }

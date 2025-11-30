@@ -58,6 +58,15 @@
   transform: scale(1.05);
 }
 
+/* Task indicators styling */
+.task-indicator {
+  height: 100%;
+  border-radius: 5px;
+  border: 2px solid currentColor;
+  background-color: transparent;
+  opacity: 0.5;
+}
+
 body {
   position: relative;
 }
