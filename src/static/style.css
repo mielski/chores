@@ -61,6 +61,7 @@
 /* Task indicators styling */
 .task-indicator {
   height: 100%;
+  flex-grow: 1;
   border-radius: 5px;
   border: 2px solid currentColor;
   background-color: transparent;
