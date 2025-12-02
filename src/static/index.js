@@ -15,84 +15,54 @@ class ProgressBar {
     this.done = 0;
     this.required = totalTasks;
     this.timeoutId = undefined;
-    this.initializeTaskIndicators();
+    // this.initializeTaskIndicators();
   }
 
-  initializeBar() {
-    // UNDER CONSTRUCTION
-    // this method will create the complete progress bar structure including the task indicators
-    const name = "Luca"; // placeholder, should be dynamic
-    template = `
-        <p class="mb-0">Luca</p>
-        <div id="progress-luca" class="progress-bar" role="progressbar" style="width: 0%;"
-          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-          Description
-        </div>
-      `
+  // initializeTaskIndicators() {
+  //   // Create individual task indicator boxes
+  //   this.taskIndicators.innerHTML = "";
+  //   for (let i = 0; i < this.required; i++) {
+  //     const indicator = document.createElement("div");
+  //     indicator.className = "task-indicator";
+  //     indicator.dataset.taskIndex = i;
+  //     this.taskIndicators.appendChild(indicator);
+  //   }
+  // }
 
-      // add template as new element to the parent
-      const newElement = document.createElement('div');
-      newElement.classList.add('progress', 'mb-2');
-      const parentElement = document.querySelector('.progressholders')
+  updateProgress(giveCompliment = false) {
+    // Updates the progress base from the current configuration
+    // giveCompliment: boolean to indicate if a compliment should be shown
+    //     on top of the progress update for a short time
+    //     generally, this is true when a task is completed, false otherwise
 
-      parentElement.appendChild(newElement);
-
-  }
-
-  initializeTaskIndicators() {
-    // Create individual task indicator boxes
-    this.taskIndicators.innerHTML = '';
-    for (let i = 0; i < this.required; i++) {
-      const indicator = document.createElement('div');
-      indicator.className = 'task-indicator';
-      indicator.dataset.taskIndex = i;
-      this.taskIndicators.appendChild(indicator);
-    }
-  }
-
-  updateProgress(giveCompliment = false, animateLastCompleted = false) {
+    // Select a random compliment
     const complimentjes = currentConfig.messages || defaultComplimentjes;
     const randomIndex = Math.floor(Math.random() * complimentjes.length);
     const compliment = complimentjes[randomIndex];
 
+    // Update progress bar width based on the fraction of tasks done
     const progress =
-      Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
+      Math.round(10_000 * Math.min(this.done / this.required, 1)) / 100 + "%";
     this.progressBar.style.width = progress;
 
-    // Update task indicators
-    this.updateTaskIndicators(animateLastCompleted);
-
+    // clear previous timeout if any to avoid conflicting animations on compliments
     if (this._timeOutId) clearTimeout(this._timeOutId);
 
     if (giveCompliment) {
       this.progressBar.innerText = compliment;
       this._timeOutId = setTimeout(
-        () => (this.progressBar.innerText = progress),
+        () => (this.progressBar.innerText = `${this.done}`),
         2000
       );
-      if (progress === "100%") {celebrationBurst()};
+      if (progress === "100%") {
+        // Show celebration when progress reaches (exactly)100%
+        celebrationBurst();
+      }
     } else {
-      this.progressBar.innerText = progress;
+      this.progressBar.innerText =  `${this.done}`;
     }
   }
-
-  updateTaskIndicators(animateLastCompleted = false) {
-    // Update the visual state of task indicators
-    const indicators = this.taskIndicators.querySelectorAll('.task-indicator');
-    
-    indicators.forEach((indicator, index) => {
-      const isCompleted = index < this.done;
-      indicator.classList.toggle('completed', isCompleted);
-      
-      // Add pulse animation to the last completed task
-      if (animateLastCompleted && index === this.done - 1 && isCompleted) {
-        indicator.classList.add('pulse');
-        setTimeout(() => indicator.classList.remove('pulse'), 600);
-      }
-    });
-  }
 }
-
 
 // Default fallback values
 const defaultComplimentjes = [
@@ -110,14 +80,9 @@ const defaultComplimentjes = [
   "gewoon geweldig! 🏆",
 ];
 
-
-
 // Initialize app configuration and then generate table
 async function initializeApp() {
-  console.log("Initializing app, current config:", currentConfig);
-
   await loadAppConfig();
-  console.log("App config after loading:", currentConfig);
   setupProgressBars();
   generateTaskTable();
   setupEventListeners();
@@ -137,6 +102,34 @@ async function loadAppConfig() {
   }
 }
 /* High level functions of the app */
+
+function setupProgressBars() {
+  // Create progress bars for each user
+  window.progressBars = {};
+  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
+    const progressElement = document.getElementById(`progress-${userId}`);
+    const taskIndicatorsElement = document.getElementById(
+      `task-indicators-${userId}`
+    );
+    for (let i = 0; i < userConfig.tasksPerWeek; i++) {
+      const indicator = document.createElement("div");
+      indicator.className = "task-indicator";
+      taskIndicatorsElement.appendChild(indicator);
+    }
+    if (progressElement && taskIndicatorsElement) {
+      window.progressBars[userId] = new ProgressBar(
+        progressElement,
+        taskIndicatorsElement,
+        userConfig.tasksPerWeek
+      );
+      // Update progress bar labels
+      const label =
+        progressElement.parentElement
+          ?.previousElementSibling;
+      if (label) label.textContent = userConfig.displayName;
+    }
+  }
+}
 
 // setup of the initial table
 function generateTaskTable() {
@@ -205,30 +198,6 @@ function _updateUserColors() {
 
   style.innerHTML = css;
   document.head.appendChild(style);
-
-  // Update progress bar labels
-  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    const label =
-      window.progressBars[userId].progressBar?.parentElement
-        ?.previousElementSibling;
-    if (label) label.textContent = userConfig.displayName;
-  }
-}
-
-function setupProgressBars() {
-  // Create progress bars for each user
-  window.progressBars = {};
-    for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    const progressElement = document.getElementById(`progress-${userId}`);
-    const taskIndicatorsElement = document.getElementById(`task-indicators-${userId}`);
-    if (progressElement && taskIndicatorsElement) {
-      window.progressBars[userId] = new ProgressBar(
-        progressElement,
-        taskIndicatorsElement,
-        userConfig.tasksPerWeek
-      );
-    }
-  }
 }
 
 // setup of the flow
@@ -248,7 +217,10 @@ function setupEventListeners() {
         if (window.progressBars[userId]) {
           window.progressBars[userId].done += countChange;
           // Animate the task indicator when a task is completed
-          window.progressBars[userId].updateProgress(countChange === 1, countChange === 1);
+          window.progressBars[userId].updateProgress(
+            countChange === 1,
+            countChange === 1
+          );
         }
 
         if (countChange === 1) {
@@ -294,7 +266,7 @@ async function storeState(reset = false) {
     try {
       const response = await fetch("/api/reset", {
         method: "POST",
-        });
+      });
       const result = await response.json();
       if (!result.success) {
         console.error("Failed to reset state:", result.error);
@@ -347,8 +319,7 @@ async function updateApp() {
       console.error("Unsuccessful in loading /api/state:", result.error);
       return;
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error("Error loading state:", error);
     for (const userId of Object.keys(currentConfig.users)) {
       if (window.progressBars && window.progressBars[userId]) {
@@ -358,7 +329,7 @@ async function updateApp() {
     }
     return;
   }
-  
+
   console.log("updateApp - state loaded:", storedButtonStates);
 
   function applyStateToButtonList(buttonNodes, isActiveArray) {
@@ -397,7 +368,6 @@ async function updateApp() {
       button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
     });
   }
-
 }
 
 // Confetti utility functions
