@@ -15,19 +15,11 @@ class ProgressBar {
     this.done = 0;
     this.required = totalTasks;
     this.timeoutId = undefined;
-    // this.initializeTaskIndicators();
+
+    // set area labels
+    this.progressBar.setAttribute("aria-valuemin", 0);
   }
 
-  // initializeTaskIndicators() {
-  //   // Create individual task indicator boxes
-  //   this.taskIndicators.innerHTML = "";
-  //   for (let i = 0; i < this.required; i++) {
-  //     const indicator = document.createElement("div");
-  //     indicator.className = "task-indicator";
-  //     indicator.dataset.taskIndex = i;
-  //     this.taskIndicators.appendChild(indicator);
-  //   }
-  // }
 
   updateProgress(giveCompliment = false) {
     // Updates the progress base from the current configuration
@@ -44,6 +36,7 @@ class ProgressBar {
     const progress =
       Math.round(10_000 * Math.min(this.done / this.required, 1)) / 100 + "%";
     this.progressBar.style.width = progress;
+    this.progressBar.setAttribute("aria-valuenow", this.done);
 
     // clear previous timeout if any to avoid conflicting animations on compliments
     if (this._timeOutId) clearTimeout(this._timeOutId);
