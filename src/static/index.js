@@ -1,6 +1,30 @@
 // project configuration constants
 "use strict";
 
+class ChoreManager {
+  constructor(cardElement) {
+    this.card = cardElement;
+    this.user = cardElement.dataset.user;
+    
+    // Cache elements
+    this.elements = {
+      counter: cardElement.querySelector('.chore-counter'),
+      progress: cardElement.querySelector('.chore-progress'),
+      input: cardElement.querySelector('.chore-input'),
+      list: cardElement.querySelector('.chore-list')
+    };
+  }
+  
+  updateCounter(completed, total) {
+    this.elements.counter.textContent = `${completed} / ${total} chores`;
+  }
+}
+
+
+
+// Usage - works for any number of cards
+const choreManagers = Array.from(document.querySelectorAll('.card[data-user]'))
+  .map(card => new ChoreManager(card));
 class ProgressBar {
   // Class to handle the progress bar updates
   // It takes an HTML element and the total number of tasks as parameters
@@ -58,17 +82,48 @@ const defaultComplimentjes = [
 
 
 
-// Initialize app configuration and then generate table
-async function initializeApp() {
-  console.log("Initializing app, current config:", currentConfig);
+class App {
 
-  await loadAppConfig();
-  console.log("App config after loading:", currentConfig);
-  setupProgressBars();
-  generateTaskTable();
-  setupEventListeners();
-  updateApp();
+  constructor() 
+  {
+    
+    this.#setupProgressBars();
+    this.#generateTaskTable();
+    this.#setupEventListeners();
+    this.update();
+
+  }
+
+  static async create() {
+    // create an app instances after loading config
+    console.log("Creating app instance with config:", currentConfig);
+
+    await loadAppConfig();
+    return new App();
+
+  }
+
+  // Constructor and initialization methods
+
+   #setupProgressBars() {
+    // Create progress bars for each user
+    this.progressBars = {};
+    for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
+      const progressElement = document.getElementById(`progress-${userId}`);
+      if (progressElement) {
+        this.progressBars[userId] = new ProgressBar(
+          progressElement,
+          userConfig.tasksPerWeek
+        );
+      }
+  }
+
 }
+
+   }
+}
+
+
 
 // Load configuration from API
 async function loadAppConfig() {
@@ -125,55 +180,43 @@ function generateTaskTable() {
   _updateUserColors();
 }
 
-function _updateUserColors() {
-  // Create dynamic CSS for user colors
-  const style = document.createElement("style");
-  let css = "";
+// function _updateUserColors() {
+//   // Create dynamic CSS for user colors
+//   const style = document.createElement("style");
+//   let css = "";
 
-  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    css += `
-      #progress-${userId} {
-        background-color: ${userConfig.color} !important;
-      }
-      .btn-${userId} {
-        border-color: ${userConfig.color};
-        color: ${userConfig.color};
-      }
-      .btn-${userId}.active {
-        background-color: ${userConfig.color};
-        border-color: ${userConfig.color};
-      }
-      .btn-${userId}:hover {
-        background-color: ${userConfig.color};
-      }
-    `;
-  }
+//   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
+//     css += `
+//       #progress-${userId} {
+//         background-color: ${userConfig.color} !important;
+//       }
+//       .btn-${userId} {
+//         border-color: ${userConfig.color};
+//         color: ${userConfig.color};
+//       }
+//       .btn-${userId}.active {
+//         background-color: ${userConfig.color};
+//         border-color: ${userConfig.color};
+//       }
+//       .btn-${userId}:hover {
+//         background-color: ${userConfig.color};
+//       }
+//     `;
+//   }
 
-  style.innerHTML = css;
-  document.head.appendChild(style);
+//   style.innerHTML = css;
+//   document.head.appendChild(style);
 
-  // Update progress bar labels
-  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    const label =
-      window.progressBars[userId].progressBar?.parentElement
-        ?.previousElementSibling;
-    if (label) label.textContent = userConfig.displayName;
-  }
-}
+//   // Update progress bar labels
+//   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
+//     const label =
+//       window.progressBars[userId].progressBar?.parentElement
+//         ?.previousElementSibling;
+//     if (label) label.textContent = userConfig.displayName;
+//   }
+// }
 
-function setupProgressBars() {
-  // Create progress bars for each user
-  window.progressBars = {};
-    for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    const progressElement = document.getElementById(`progress-${userId}`);
-    if (progressElement) {
-      window.progressBars[userId] = new ProgressBar(
-        progressElement,
-        userConfig.tasksPerWeek
-      );
-    }
-  }
-}
+
 
 // setup of the flow
 function setupEventListeners() {

@@ -90,49 +90,43 @@
           <div class="row">
             <div class="col-5 mx-2">
               <div class="card shadow">
-                <div class="card-body">
-                  <h3
-                    class="card-title text-dark d-flex align-items-center justify-content-between"
-                  >
-                    <span>Luca</span>
-                  </h3>
+                <div class="user-card card-body" data-user="Luca">
+                  <h3 class="user-card__title card-title text-dark d-flex align-items-center" > Luca </h3>
                   <div class="d-flex align-items-center gap-2 text-muted mt-2">
                     <i class="fas fa-bullseye me-1" aria-hidden="true"></i>
-                    <span>0 / 7 chores</span>
+                    <span class="user-card__chore-count">0 / 7 taakjes</span>
                   </div>
                   <div class="mt-3">
-                    <div class="progress mb-2" style="height: 12px">
+                    <div class="progress mb-2 " style="height: 12px">
                       <div
-                        class="progress-bar bg-primary"
+                        class="progress-bar bg-primary user-card__progress"
                         style="width: 0%"
                       ></div>
                     </div>
-                    <p class="small text-muted mt-2">7 more to reach target</p>
+                    <p class="small text-muted mt-2 user-card__remaining">nog 7 te gaan</p>
                   </div>
                   <div class="mt-3">
                     <div class="d-flex gap-2 mb-3">
                       <input
-                        class="form-control form-control-sm flex-fill"
+                        class="form-control form-control-sm flex-fill user-card__new-chore-input"
                         placeholder="Add a chore..."
-                        value=""
-                      <button
-                        class="btn btn-primary btn-sm flex-shrink-0 btn-40px"
-                      >
+                        value="">
+                      <button class="btn btn-primary btn-sm flex-shrink-0 user-card__new-chore-button" >
                         <i class="fas fa-plus" aria-hidden="true"></i>
                       </button>
                     </div>
-                    <div style="max-height: 200px; overflow-y: auto">
-                      <div class="border-start border-success border-3 ps-2 mb-2 shadow-sm p-2">
+                    <div class="chore-list" style="max-height: 200px; overflow-y: auto">
+                      <div class="task border-start border-success border-3 ps-2 mb-2 shadow-sm p-2">
                         <div class="d-flex justify-content-between align-items-center">
-                          <span class="fw-medium">Afwas doen</span>
-                          <small class="text-muted">vandaag</small>
+                          <span class="task__title fw-medium">Afwas doen</span>
+                          <small class="task__date text-muted">vandaag</small>
                         </div>
                         
                       </div> 
-                      <div class="border-start border-success border-3 ps-2 mb-2 shadow-sm p-2">
+                      <div class="task border-start border-success border-3 ps-2 mb-2 shadow-sm p-2">
                         <div class="d-flex justify-content-between align-items-center">
-                          <span class="fw-medium">Boodschappen</span>
-                          <small class="text-muted">vandaag</small>
+                          <span class="task__title fw-medium">Boodschappen</span>
+                          <small class="task__date text-muted">vandaag</small>
                         </div>
                         
                       </div>
@@ -143,32 +137,32 @@
             </div>
             <div class="col-5 mx-2">
               <div class="card shadow">
-                <div class="card-body">
-                  <h3 class="card-title text-dark">Milou</h3>
+                <div class="user-card card-body">
+                  <h3 class="user-card__title card-title text-dark">Milou</h3>
                   <div class="d-flex align-items-center gap-2 text-muted mt-2">
                     <i class="fas fa-bullseye me-1" aria-hidden="true"></i>
-                    <span>0 / 7 chores</span>
+                    <span class="user-card__chore-count">0 / 7 taakjes</span>
                   </div>
                   <div class="mt-3">
-                    <div class="progress mb-2" style="height: 12px">
+                    <div  class="progress mb-2" style="height: 12px">
                       <div
-                        class="progress-bar bg-primary"
+                        class="user-card__progress progress-bar bg-primary"
                         style="width: 0%"
                       ></div>
                     </div>
-                    <p class="small text-muted mt-2">7 more to reach target</p>
+                    <p class="user-card__remaining small text-muted mt-2">nog 7 te gaan</p>
                   </div>
                   <div class="mt-3">
                     <div class="d-flex gap-2 mb-3">
                       <input
-                        class="form-control form-control-sm flex-fill"
+                        class="form-control form-control-sm flex-fill user-card__new-chore-input"
                         placeholder="Add a chore..."
                         value=""
-                      /><button class="btn btn-primary btn-sm flex-shrink-0">
+                      /><button class="btn btn-primary btn-sm flex-shrink-0 user-card__new-chore-button">
                         <i class="fas fa-plus" aria-hidden="true"></i>
                       </button>
                     </div>
-                    <div style="max-height: 200px; overflow-y: auto">
+                    <div class="chore-list" style="max-height: 200px; overflow-y: auto">
                       <p class="small text-muted text-center py-4">
                         No chores yet this week
                       </p>
