@@ -1,30 +1,77 @@
 // project configuration constants
 "use strict";
 
+
+
+function Chore(description, date=new Date()) {
+  this.description = description;
+  this.date = date;
+}
+
 class ChoreManager {
   constructor(cardElement) {
     this.card = cardElement;
     this.user = cardElement.dataset.user;
+
+    // initialize empty state
+    this.currentChores = [];
+    this.choresTarget = 0;
+    this.count = 0;
+
     
     // Cache elements
     this.elements = {
-      counter: cardElement.querySelector('.chore-counter'),
-      progress: cardElement.querySelector('.chore-progress'),
-      input: cardElement.querySelector('.chore-input'),
+      counter: cardElement.querySelector('.user-card__chore-count'),
+      progress: cardElement.querySelector('.user-card__progress'),
+      remaining: cardElement.querySelector('.user-card__remaining'),
       list: cardElement.querySelector('.chore-list')
     };
   }
   
-  updateCounter(completed, total) {
-    this.elements.counter.textContent = `${completed} / ${total} chores`;
+  update(giveCompliment = false) {
+    // assuming that we can use the currentConfig to get user info
+
+    this.currentChores = currentConfig.users[this.user].chores;
+    this.choresTarget = currentConfig.users[this.user].choresPerWeek;
+    this.count = this.currentChores.length;
+
+    // update the elements
+    this.elements.counter.textContent = `${this.count} / ${this.choresTarget} chores`;
+    const progressPercent = Math.round(100 * Math.min(this.count / this.choresTarget, 1), 0) + "%";
+    this.elements.progress.style.width = progressPercent;
+    this.elements.remaining.textContent = this.count < this.choresTarget ? `nog ${this.choresTarget - this.count} te gaan` : "allemaal klaar!";
+    
+    if (this.count === 0) {
+      this.elements.list.innerHTML = `<p class="small text-muted text-center py-4">
+        No chores yet this week
+      </p>`;
+    } else {
+      this.elements.list.innerHTML = '';
+      this.currentChores.forEach(chore => {
+        const choreElement = document.createElement('div');
+        choreElement.className = 'chore border-start border-success border-3 ps-2 mb-2 shadow-sm p-2';
+        choreElement.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="task__title fw-medium">${chore.description}</span>
+            <small class="task__date">${new Date(chore.date).toLocaleDateString()}</small>
+          </div>
+        `;
+        this.elements.list.appendChild(choreElement);
+      });
+    }
+
+    if (giveCompliment) {
+      // TODO
+    }
+
   }
+  
 }
 
 
 
 // Usage - works for any number of cards
-const choreManagers = Array.from(document.querySelectorAll('.card[data-user]'))
-  .map(card => new ChoreManager(card));
+
 class ProgressBar {
   // Class to handle the progress bar updates
   // It takes an HTML element and the total number of tasks as parameters
@@ -87,9 +134,9 @@ class App {
   constructor() 
   {
     
-    this.#setupProgressBars();
-    this.#generateTaskTable();
-    this.#setupEventListeners();
+    this.#setupChoreManagers();
+    // this.#generateTaskTable();
+    // this.#setupEventListeners();
     this.update();
 
   }
@@ -105,25 +152,32 @@ class App {
 
   // Constructor and initialization methods
 
-   #setupProgressBars() {
+   #setupChoreManagers() {
     // Create progress bars for each user
-    this.progressBars = {};
-    for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-      const progressElement = document.getElementById(`progress-${userId}`);
-      if (progressElement) {
-        this.progressBars[userId] = new ProgressBar(
-          progressElement,
-          userConfig.tasksPerWeek
-        );
-      }
+      this.choreManagers = {};
+      Array.from(document.querySelectorAll('.user-card[data-user]'))
+        .forEach(card => this.choreManagers[card.dataset.user] = new ChoreManager(card));
+      } 
+
+  update(giveCompliment = false) {
+    // Update all chore managers
+    Object.values(this.choreManagers).forEach(manager => manager.update(giveCompliment));
   }
-
 }
 
-   }
+var currentConfig = {}
+
+async function tempConfigLoad() {
+  // temporary function to simulate config load
+  return new Promise((resolve) => {
+
+    currentConfig = {
+       'Milou': {"chores": [new Chore("Dishes"), new Chore("Vacuuming")], "choresPerWeek": 5},
+       'Luca': {"chores": [new Chore("Laundry")], "choresPerWeek": 4}
+      };
+    setTimeout(() => resolve("Config loaded"), 100);
+  })
 }
-
-
 
 // Load configuration from API
 async function loadAppConfig() {
@@ -131,7 +185,8 @@ async function loadAppConfig() {
   // log errors and use fallback if needed
   // do not block the caller, so no await or return here!
   try {
-    const result = await configReady;
+    // const result = await configReady;
+    const result = await tempConfigLoad();
     console.log("promise result:", result);
   } catch (error) {
     console.error("Error loading configuration:", error);
@@ -465,4 +520,9 @@ update all from data load -> set all buttons and update both progress bars separ
 */
 
 // Initialize the application
-initializeApp();
+
+// Initialize the application
+(async () => {
+  const app = await App.create();
+  globalThis.app = app; // Works in all environments
+})();
