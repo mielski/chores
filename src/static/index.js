@@ -71,16 +71,33 @@ class ChoreManager {
       </p>`;
     } else {
       this.elements.list.innerHTML = "";
-      this.currentChores.forEach((chore) => {
+      this.currentChores.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((chore) => {
         const choreElement = document.createElement("div");
         choreElement.className =
           "chore border-start border-success border-3 ps-2 mb-2 shadow-sm p-2";
+        
+        const choreDate = new Date(chore.date);
+        const today = new Date();
+        const isToday =
+          choreDate.getDate() === today.getDate() &&
+          choreDate.getMonth() === today.getMonth() &&
+          choreDate.getFullYear() === today.getFullYear();
+        const isYesterday =
+          choreDate.getDate() === today.getDate() - 1 &&
+          choreDate.getMonth() === today.getMonth() &&
+          choreDate.getFullYear() === today.getFullYear();
+        
+        let displayDate = new Date(chore.date).toLocaleDateString();
+        if (isToday) {
+          displayDate = "vandaag";
+        } else if (isYesterday) {
+          displayDate = "gisteren";
+        }
+
         choreElement.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
             <span class="task__title fw-medium">${chore.description}</span>
-            <small class="task__date">${new Date(
-              chore.date
-            ).toLocaleDateString()}</small>
+            <small class="task__date"><time datetime="${chore.date.toISOString()}">${displayDate}</time></small>
           </div>
         `;
         this.elements.list.appendChild(choreElement);
