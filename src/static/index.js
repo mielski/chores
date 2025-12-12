@@ -31,8 +31,7 @@ class ChoreManager {
   update(giveCompliment = false) {
     // assuming that we can use the currentConfig to get user info
 
-    this.currentChores = currentConfig.users[this.user].chores;
-    this.choresTarget = currentConfig.users[this.user].choresPerWeek;
+    this.choresTarget = currentConfig.users[this.user].tasksPerWeek;
     this.count = this.currentChores.length;
 
     // update the elements
@@ -145,7 +144,7 @@ class App {
     // create an app instances after loading config
     console.log("Creating app instance with config:", currentConfig);
 
-    await loadAppConfig();
+    await configReady;
     return new App();
 
   }
@@ -165,111 +164,9 @@ class App {
   }
 }
 
-var currentConfig = {}
 
-async function tempConfigLoad() {
-  // temporary function to simulate config load
-  return new Promise((resolve) => {
 
-    currentConfig = {
-       'Milou': {"chores": [new Chore("Dishes"), new Chore("Vacuuming")], "choresPerWeek": 5},
-       'Luca': {"chores": [new Chore("Laundry")], "choresPerWeek": 4}
-      };
-    setTimeout(() => resolve("Config loaded"), 100);
-  })
-}
 
-// Load configuration from API
-async function loadAppConfig() {
-  // wait for the configuration to be ready
-  // log errors and use fallback if needed
-  // do not block the caller, so no await or return here!
-  try {
-    // const result = await configReady;
-    const result = await tempConfigLoad();
-    console.log("promise result:", result);
-  } catch (error) {
-    console.error("Error loading configuration:", error);
-  }
-}
-/* High level functions of the app */
-
-// setup of the initial table
-function generateTaskTable() {
-  // run once on page load to create the tasks from the configuration
-  // and remove the template row
-
-  const tableBody = document.querySelector("tbody");
-  const tableTemplateRow = tableBody.lastElementChild;
-
-  function addRow(taskname) {
-    const row = tableTemplateRow.cloneNode(true);
-    row.firstElementChild.textContent = taskname;
-    tableBody.appendChild(row);
-  }
-
-  // Add general tasks first
-  currentConfig.generalTasks.forEach((taskName) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td scope="row">${taskName}</td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-    `;
-    tableBody.insertBefore(row, tableTemplateRow);
-  });
-
-  // Add personal tasks
-  currentConfig.personalTasks.forEach((taskName) => {
-    addRow(taskName);
-  });
-
-  tableTemplateRow.remove(); // remove the template element
-
-  // Update CSS colors for users
-  _updateUserColors();
-}
-
-// function _updateUserColors() {
-//   // Create dynamic CSS for user colors
-//   const style = document.createElement("style");
-//   let css = "";
-
-//   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-//     css += `
-//       #progress-${userId} {
-//         background-color: ${userConfig.color} !important;
-//       }
-//       .btn-${userId} {
-//         border-color: ${userConfig.color};
-//         color: ${userConfig.color};
-//       }
-//       .btn-${userId}.active {
-//         background-color: ${userConfig.color};
-//         border-color: ${userConfig.color};
-//       }
-//       .btn-${userId}:hover {
-//         background-color: ${userConfig.color};
-//       }
-//     `;
-//   }
-
-//   style.innerHTML = css;
-//   document.head.appendChild(style);
-
-//   // Update progress bar labels
-//   for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-//     const label =
-//       window.progressBars[userId].progressBar?.parentElement
-//         ?.previousElementSibling;
-//     if (label) label.textContent = userConfig.displayName;
-//   }
-// }
 
 
 
@@ -519,7 +416,6 @@ update all from reset button -> set all buttons and update both progress bars se
 update all from data load -> set all buttons and update both progress bars separately
 */
 
-// Initialize the application
 
 // Initialize the application
 (async () => {
