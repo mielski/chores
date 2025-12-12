@@ -1,9 +1,7 @@
 // project configuration constants
 "use strict";
 
-
-
-function Chore(description, date=new Date()) {
+function Chore(description, date = new Date()) {
   this.description = description;
   this.date = date;
 }
@@ -18,16 +16,39 @@ class ChoreManager {
     this.choresTarget = 0;
     this.count = 0;
 
-    
     // Cache elements
     this.elements = {
-      counter: cardElement.querySelector('.user-card__chore-count'),
-      progress: cardElement.querySelector('.user-card__progress'),
-      remaining: cardElement.querySelector('.user-card__remaining'),
-      list: cardElement.querySelector('.chore-list')
+      counter: cardElement.querySelector(".user-card__chore-count"),
+      progress: cardElement.querySelector(".user-card__progress"),
+      remaining: cardElement.querySelector(".user-card__remaining"),
+      list: cardElement.querySelector(".chore-list"),
+      nameInput: cardElement.querySelector(".user-card__new-chore-input"),
+      buttonAdd: cardElement.querySelector(".user-card__new-chore-button"),
     };
+
+    // Setup event listeners
+    this.elements.buttonAdd.addEventListener("click", this.#addChoreHandler.bind(this));
+    this.elements.nameInput.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        this.#addChoreHandler();
+      };
+    });
   }
-  
+
+  #addChoreHandler() {
+    // event handler for adding a new chore
+    const choreName = this.elements.nameInput.value.trim();
+    if (!choreName) {
+      return; // ignore empty input
+    }
+    console.log(`${this.user} selected ${choreName}`);
+    showSuccess(`Chore "${choreName}" added for ${this.user}`, "Chore Added");
+    this.currentChores.push(new Chore(choreName));
+    this.update();
+
+    this.elements.nameInput.value = ""; // clear input
+    };
+
   update(giveCompliment = false) {
     // assuming that we can use the currentConfig to get user info
 
@@ -36,23 +57,30 @@ class ChoreManager {
 
     // update the elements
     this.elements.counter.textContent = `${this.count} / ${this.choresTarget} chores`;
-    const progressPercent = Math.round(100 * Math.min(this.count / this.choresTarget, 1), 0) + "%";
+    const progressPercent =
+      Math.round(100 * Math.min(this.count / this.choresTarget, 1), 0) + "%";
     this.elements.progress.style.width = progressPercent;
-    this.elements.remaining.textContent = this.count < this.choresTarget ? `nog ${this.choresTarget - this.count} te gaan` : "allemaal klaar!";
-    
+    this.elements.remaining.textContent =
+      this.count < this.choresTarget
+        ? `nog ${this.choresTarget - this.count} te gaan`
+        : "allemaal klaar!";
+
     if (this.count === 0) {
       this.elements.list.innerHTML = `<p class="small text-muted text-center py-4">
         No chores yet this week
       </p>`;
     } else {
-      this.elements.list.innerHTML = '';
-      this.currentChores.forEach(chore => {
-        const choreElement = document.createElement('div');
-        choreElement.className = 'chore border-start border-success border-3 ps-2 mb-2 shadow-sm p-2';
+      this.elements.list.innerHTML = "";
+      this.currentChores.forEach((chore) => {
+        const choreElement = document.createElement("div");
+        choreElement.className =
+          "chore border-start border-success border-3 ps-2 mb-2 shadow-sm p-2";
         choreElement.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
             <span class="task__title fw-medium">${chore.description}</span>
-            <small class="task__date">${new Date(chore.date).toLocaleDateString()}</small>
+            <small class="task__date">${new Date(
+              chore.date
+            ).toLocaleDateString()}</small>
           </div>
         `;
         this.elements.list.appendChild(choreElement);
@@ -62,12 +90,8 @@ class ChoreManager {
     if (giveCompliment) {
       // TODO
     }
-
   }
-  
 }
-
-
 
 // Usage - works for any number of cards
 
@@ -102,13 +126,14 @@ class ProgressBar {
         () => (this.progressBar.innerText = progress),
         2000
       );
-      if (progress === "100%") {celebrationBurst()};
+      if (progress === "100%") {
+        celebrationBurst();
+      }
     } else {
       this.progressBar.innerText = progress;
     }
   }
 }
-
 
 // Default fallback values
 const defaultComplimentjes = [
@@ -126,18 +151,12 @@ const defaultComplimentjes = [
   "gewoon geweldig! 🏆",
 ];
 
-
-
 class App {
-
-  constructor() 
-  {
-    
+  constructor() {
     this.#setupChoreManagers();
     // this.#generateTaskTable();
     // this.#setupEventListeners();
     this.update();
-
   }
 
   static async create() {
@@ -146,29 +165,25 @@ class App {
 
     await configReady;
     return new App();
-
   }
 
   // Constructor and initialization methods
 
-   #setupChoreManagers() {
+  #setupChoreManagers() {
     // Create progress bars for each user
-      this.choreManagers = {};
-      Array.from(document.querySelectorAll('.user-card[data-user]'))
-        .forEach(card => this.choreManagers[card.dataset.user] = new ChoreManager(card));
-      } 
+    this.choreManagers = {};
+    Array.from(document.querySelectorAll(".user-card[data-user]")).forEach(
+      (card) => (this.choreManagers[card.dataset.user] = new ChoreManager(card))
+    );
+  }
 
   update(giveCompliment = false) {
     // Update all chore managers
-    Object.values(this.choreManagers).forEach(manager => manager.update(giveCompliment));
+    Object.values(this.choreManagers).forEach((manager) =>
+      manager.update(giveCompliment)
+    );
   }
 }
-
-
-
-
-
-
 
 // setup of the flow
 function setupEventListeners() {
@@ -232,7 +247,7 @@ async function storeState(reset = false) {
     try {
       const response = await fetch("/api/reset", {
         method: "POST",
-        });
+      });
       const result = await response.json();
       if (!result.success) {
         console.error("Failed to reset state:", result.error);
@@ -286,8 +301,7 @@ async function updateApp() {
       console.error("Unsuccessful in loading /api/state:", result.error);
       return;
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error("Error loading state:", error);
     for (const userId of Object.keys(currentConfig.users)) {
       if (window.progressBars && window.progressBars[userId]) {
@@ -297,7 +311,7 @@ async function updateApp() {
     }
     return;
   }
-  
+
   console.log("updateApp - state loaded:", storedButtonStates);
 
   function applyStateToButtonList(buttonNodes, isActiveArray) {
@@ -336,7 +350,6 @@ async function updateApp() {
       button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
     });
   }
-
 }
 
 // Confetti utility functions
@@ -416,6 +429,63 @@ update all from reset button -> set all buttons and update both progress bars se
 update all from data load -> set all buttons and update both progress bars separately
 */
 
+// Toast notification utilities
+function showToast(message, type = "info", title = null, duration = 5000) {
+  const toast = document.getElementById("notification-toast");
+  const toastIcon = document.getElementById("toast-icon");
+  const toastTitle = document.getElementById("toast-title");
+  const toastMessage = document.getElementById("toast-message");
+
+  // Configure based on type
+  const configs = {
+    success: {
+      icon: "fa-check-circle",
+      color: "text-success",
+      title: "Success",
+    },
+    error: {
+      icon: "fa-exclamation-circle",
+      color: "text-danger",
+      title: "Error",
+    },
+    warning: {
+      icon: "fa-exclamation-triangle",
+      color: "text-warning",
+      title: "Warning",
+    },
+    info: { icon: "fa-info-circle", color: "text-info", title: "Info" },
+  };
+
+  const config = configs[type] || configs.info;
+
+  // Update toast content
+  toastIcon.className = `fas ${config.icon} ${config.color} me-2`;
+  toastTitle.textContent = title || config.title;
+  toastMessage.textContent = message;
+
+  // Show toast
+  const bsToast = new bootstrap.Toast(toast, {
+    delay: duration,
+  });
+  bsToast.show();
+}
+
+// Convenience functions
+function showSuccess(message, title = null) {
+  showToast(message, "success", title);
+}
+
+function showError(message, title = null) {
+  showToast(message, "error", title);
+}
+
+function showWarning(message, title = null) {
+  showToast(message, "warning", title);
+}
+
+function showInfo(message, title = null) {
+  showToast(message, "info", title);
+}
 
 // Initialize the application
 (async () => {
