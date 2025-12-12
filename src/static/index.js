@@ -64,14 +64,23 @@ class ChoreManager {
 
     // update the elements
     this.elements.counter.textContent = `${this.count} / ${this.choresTarget} chores`;
-    const progressPercent =
-      Math.round(100 * Math.min(this.count / this.choresTarget, 1), 0) + "%";
-    this.elements.progress.style.width = progressPercent;
+
+    // update progress bar
+    const percentage = Math.round(100 * Math.min(this.count / this.choresTarget, 1), 0);
+    const red = Math.round(220 - (percentage * 2.2));   // 220 -> 0
+    const green = Math.round(percentage * 2.2);         // 0 -> 220
+    const blue = 0;
+  
+    this.elements.progress.style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+    this.elements.progress.style.width = percentage + "%";
+
+    // update the remaining tasks element
     this.elements.remaining.textContent =
       this.count < this.choresTarget
         ? `nog ${this.choresTarget - this.count} te gaan`
         : "allemaal klaar!";
 
+    // update the chore list
     if (this.count === 0) {
       this.elements.list.innerHTML = `<p class="small text-muted text-center py-4">
         No chores yet this week
