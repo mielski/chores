@@ -87,12 +87,16 @@ class ChoreManager {
           choreDate.getMonth() === today.getMonth() &&
           choreDate.getFullYear() === today.getFullYear();
         
-        let displayDate = new Date(chore.date).toLocaleDateString();
-        if (isToday) {
-          displayDate = "vandaag";
-        } else if (isYesterday) {
-          displayDate = "gisteren";
-        }
+        let displayDate = new Date(chore.date).toLocaleDateString(window.navigator.language, {
+            day: "numeric",
+            month: "short",
+          });
+
+        // if (isToday) {
+        //   displayDate = "vandaag";
+        // } else if (isYesterday) {
+        //   displayDate = "gisteren";
+        // } 
 
         choreElement.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
