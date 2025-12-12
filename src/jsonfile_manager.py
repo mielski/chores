@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -94,9 +95,34 @@ class FileStateStore(BaseJsonStore):
     def get_default_content(self) -> dict:
         """Generate default state structure based on current configuration."""
         
+        return {
+            "Milou": {
+                "config": {
+                    "tasksPerWeek": 5,
+                    "allowance": 2.0,
+                    "reward": 0.2
+                },
+                "choreList": [
+                    {"name": "Take out trash", "date": datetime.fromisoformat("2025-12-10")},
+                    {"name": "Wash dishes", "date": datetime.fromisoformat("2025-12-11")}
+                ]
+            },
+            "Luca": {
+                "config": {
+                    "tasksPerWeek": 4,
+                    "allowance": 1.0,
+                    "reward": 0.1
+                },
+                "choreList": [
+                    {"name": "Clean room", "date": datetime.fromisoformat("2025-12-10")},
+                    {"name": "Do homework", "date": datetime.fromisoformat("2025-12-11")}
+                ]
+            }
+        }
         config = self.config_store.load()
         content = {}
         
+
         # Create state for each user based on their task count
         for user_id in config['users'].keys():
             task_count = len(config['personalTasks']) * 7

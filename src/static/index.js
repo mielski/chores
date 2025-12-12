@@ -1,8 +1,8 @@
 // project configuration constants
 "use strict";
 
-function Chore(description, date = new Date()) {
-  this.description = description;
+function Chore(name, date = new Date()) {
+  this.name = name;
   this.date = date;
 }
 
@@ -27,15 +27,15 @@ class ChoreManager {
     };
 
     // Setup event listeners
-    this.elements.buttonAdd.addEventListener("click", this.#addChoreHandler.bind(this));
+    this.elements.buttonAdd.addEventListener("click", this.#handlerAddChore.bind(this));
     this.elements.nameInput.addEventListener("keypress", (event) => {
       if (event.key === "Enter") {
-        this.#addChoreHandler();
+        this.#handlerAddChore();
       };
     });
   }
 
-  #addChoreHandler() {
+  #handlerAddChore() {
     // event handler for adding a new chore
     const choreName = this.elements.nameInput.value.trim();
     if (!choreName) {
@@ -49,10 +49,17 @@ class ChoreManager {
     this.elements.nameInput.value = ""; // clear input
     };
 
-  update(giveCompliment = false) {
-    // assuming that we can use the currentConfig to get user info
+  setState(userData) {
+    // set the state of the chore manager from data
+    this.currentChores = userData.choreList.map(
+      ({name, date}) => new Chore(name, new Date(date))
+    );
+    this.choresTarget = userData.config.tasksPerWeek;
+  }
 
-    this.choresTarget = currentConfig.users[this.user].tasksPerWeek;
+  async update(giveCompliment = false) {
+    // assuming that we can use the currentConfig to get user info
+    
     this.count = this.currentChores.length;
 
     // update the elements
@@ -92,15 +99,15 @@ class ChoreManager {
             month: "short",
           });
 
-        // if (isToday) {
-        //   displayDate = "vandaag";
-        // } else if (isYesterday) {
-        //   displayDate = "gisteren";
-        // } 
+        if (isToday) {
+          displayDate = "vandaag";
+        } else if (isYesterday) {
+          displayDate = "gisteren";
+        } 
 
         choreElement.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
-            <span class="task__title fw-medium">${chore.description}</span>
+            <span class="task__title fw-medium">${chore.name}</span>
             <small class="task__date"><time datetime="${chore.date.toISOString()}">${displayDate}</time></small>
           </div>
         `;
@@ -198,8 +205,21 @@ class App {
     );
   }
 
-  update(giveCompliment = false) {
+  async update(giveCompliment = false) {
     // Update all chore managers
+    await getState()
+      .then((data) => {
+        Object.entries(data).forEach(([userId, userData]) => {
+          if (this.choreManagers[userId]) {
+            this.choreManagers[userId].setState(userData);
+          }
+          
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching state for update:", error);
+      });
+
     Object.values(this.choreManagers).forEach((manager) =>
       manager.update(giveCompliment)
     );
@@ -258,6 +278,16 @@ function setupEventListeners() {
   });
 }
 
+async function getState() {
+  try {
+    const response = await fetch("/api/state");
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error("Error fetching state:", error);
+    return null;
+  }
+}
 async function storeState(reset = false) {
   // store state of the buttons to backend API
   // if reset=true stored false for all states in order to reset the app
@@ -510,6 +540,7 @@ function showInfo(message, title = null) {
 
 // Initialize the application
 (async () => {
+  await storeState(true); // reset state on load
   const app = await App.create();
   globalThis.app = app; // Works in all environments
 })();

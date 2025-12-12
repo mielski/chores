@@ -70,7 +70,7 @@ def load_user(user_id):
     return None
 
 # Configuration
-STATE_FILE = os.getenv('STATE_FILE', 'household_state.json')
+STATE_FILE = os.getenv('STATE_FILE', 'household_state_v2.json')
 PORT = int(os.getenv('PORT', 8080))
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 APP_VERSION = os.getenv('APP_VERSION', 'dev')
