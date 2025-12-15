@@ -98,7 +98,7 @@ class FileStateStore(BaseJsonStore):
         return {
             "Milou": {
                 "config": {
-                    "tasksPerWeek": 5,
+                    "tasksPerWeek": 10,
                     "allowance": 2.0,
                     "reward": 0.2
                 },
@@ -109,7 +109,7 @@ class FileStateStore(BaseJsonStore):
             },
             "Luca": {
                 "config": {
-                    "tasksPerWeek": 4,
+                    "tasksPerWeek": 20,
                     "allowance": 1.0,
                     "reward": 0.1
                 },

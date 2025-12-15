@@ -7,9 +7,10 @@ function Chore(name, date = new Date()) {
 }
 
 class ChoreManager {
-  constructor(cardElement) {
+  constructor(cardElement, app) {
     this.card = cardElement;
     this.user = cardElement.dataset.user;
+    this.app = app; // Reference to app for state operations
 
     // initialize empty state
     this.currentChores = [];
@@ -27,11 +28,14 @@ class ChoreManager {
     };
 
     // Setup event listeners
-    this.elements.buttonAdd.addEventListener("click", this.#handlerAddChore.bind(this));
+    this.elements.buttonAdd.addEventListener(
+      "click",
+      this.#handlerAddChore.bind(this)
+    );
     this.elements.nameInput.addEventListener("keypress", (event) => {
       if (event.key === "Enter") {
         this.#handlerAddChore();
-      };
+      }
     });
   }
 
@@ -43,34 +47,57 @@ class ChoreManager {
     }
     console.log(`${this.user} selected ${choreName}`);
     showSuccess(`Chore "${choreName}" added for ${this.user}`, "Chore Added");
+
+    // Add chore and save through app
     this.currentChores.push(new Chore(choreName));
+    this.#saveState();
     this.update();
 
     this.elements.nameInput.value = ""; // clear input
-    };
+  }
+
+  async #saveState() {
+    // Save current state through app's simple API
+    try {
+      const currentState = await this.app.getState();
+      if (currentState && currentState[this.user]) {
+        currentState[this.user].choreList = this.currentChores.map((chore) => ({
+          name: chore.name,
+          date: chore.date.toISOString(),
+        }));
+        await this.app.saveState(currentState);
+      }
+    } catch (error) {
+      console.error(`Failed to save state for ${this.user}:`, error);
+      showError(`Failed to save chore for ${this.user}`);
+    }
+  }
 
   setState(userData) {
     // set the state of the chore manager from data
     this.currentChores = userData.choreList.map(
-      ({name, date}) => new Chore(name, new Date(date))
+      ({ name, date }) => new Chore(name, new Date(date))
     );
     this.choresTarget = userData.config.tasksPerWeek;
   }
 
   async update(giveCompliment = false) {
     // assuming that we can use the currentConfig to get user info
-    
+
     this.count = this.currentChores.length;
 
     // update the elements
     this.elements.counter.textContent = `${this.count} / ${this.choresTarget} chores`;
 
     // update progress bar
-    const percentage = Math.round(100 * Math.min(this.count / this.choresTarget, 1), 0);
-    const red = Math.round(220 - (percentage * 2.2));   // 220 -> 0
-    const green = Math.round(percentage * 2.2);         // 0 -> 220
+    const percentage = Math.round(
+      100 * Math.min(this.count / this.choresTarget, 1),
+      0
+    );
+    const red = Math.round(220 - percentage * 2.2); // 220 -> 0
+    const green = Math.round(percentage * 2.2); // 0 -> 220
     const blue = 0;
-  
+
     this.elements.progress.style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
     this.elements.progress.style.width = percentage + "%";
 
@@ -87,41 +114,46 @@ class ChoreManager {
       </p>`;
     } else {
       this.elements.list.innerHTML = "";
-      this.currentChores.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((chore) => {
-        const choreElement = document.createElement("div");
-        choreElement.className =
-          "chore border-start border-success border-3 ps-2 mb-2 shadow-sm p-2";
-        
-        const choreDate = new Date(chore.date);
-        const today = new Date();
-        const isToday =
-          choreDate.getDate() === today.getDate() &&
-          choreDate.getMonth() === today.getMonth() &&
-          choreDate.getFullYear() === today.getFullYear();
-        const isYesterday =
-          choreDate.getDate() === today.getDate() - 1 &&
-          choreDate.getMonth() === today.getMonth() &&
-          choreDate.getFullYear() === today.getFullYear();
-        
-        let displayDate = new Date(chore.date).toLocaleDateString(window.navigator.language, {
-            day: "numeric",
-            month: "short",
-          });
+      this.currentChores
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .forEach((chore) => {
+          const choreElement = document.createElement("div");
+          choreElement.className =
+            "chore border-start border-success border-3 ps-2 mb-2 shadow-sm p-2";
 
-        if (isToday) {
-          displayDate = "vandaag";
-        } else if (isYesterday) {
-          displayDate = "gisteren";
-        } 
+          const choreDate = new Date(chore.date);
+          const today = new Date();
+          const isToday =
+            choreDate.getDate() === today.getDate() &&
+            choreDate.getMonth() === today.getMonth() &&
+            choreDate.getFullYear() === today.getFullYear();
+          const isYesterday =
+            choreDate.getDate() === today.getDate() - 1 &&
+            choreDate.getMonth() === today.getMonth() &&
+            choreDate.getFullYear() === today.getFullYear();
 
-        choreElement.innerHTML = `
+          let displayDate = new Date(chore.date).toLocaleDateString(
+            window.navigator.language,
+            {
+              day: "numeric",
+              month: "short",
+            }
+          );
+
+          if (isToday) {
+            displayDate = "vandaag";
+          } else if (isYesterday) {
+            displayDate = "gisteren";
+          }
+
+          choreElement.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
             <span class="task__title fw-medium">${chore.name}</span>
             <small class="task__date"><time datetime="${chore.date.toISOString()}">${displayDate}</time></small>
           </div>
         `;
-        this.elements.list.appendChild(choreElement);
-      });
+          this.elements.list.appendChild(choreElement);
+        });
     }
 
     if (giveCompliment) {
@@ -204,34 +236,66 @@ class App {
     return new App();
   }
 
+  // Simple state management methods
+  async getState() {
+    try {
+      const response = await fetch("/api/state");
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error("Error fetching state:", error);
+      return null;
+    }
+  }
+
+  async saveState(state) {
+    try {
+      const response = await fetch("/api/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state),
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return true;
+    } catch (error) {
+      console.error("Error saving state:", error);
+      throw error;
+    }
+  }
+
   // Constructor and initialization methods
 
   #setupChoreManagers() {
-    // Create progress bars for each user
+    // Create chore managers with app reference
     this.choreManagers = {};
     Array.from(document.querySelectorAll(".user-card[data-user]")).forEach(
-      (card) => (this.choreManagers[card.dataset.user] = new ChoreManager(card))
+      (card) =>
+        (this.choreManagers[card.dataset.user] = new ChoreManager(card, this))
     );
   }
 
   async update(giveCompliment = false) {
     // Update all chore managers
-    await getState()
-      .then((data) => {
+    try {
+      const data = await this.getState();
+      if (data) {
         Object.entries(data).forEach(([userId, userData]) => {
           if (this.choreManagers[userId]) {
             this.choreManagers[userId].setState(userData);
           }
-          
         });
-      })
-      .catch((error) => {
-        console.error("Error fetching state for update:", error);
-      });
 
-    Object.values(this.choreManagers).forEach((manager) =>
-      manager.update(giveCompliment)
-    );
+        Object.values(this.choreManagers).forEach((manager) =>
+          manager.update(giveCompliment)
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching state for update:", error);
+      showError("Failed to update application state");
+    }
   }
 }
 
