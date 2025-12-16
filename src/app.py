@@ -219,7 +219,7 @@ def update_state():
             }), 400
         
         # Validate state structure
-        required_keys = ['milou', 'luca', 'general']
+        required_keys = ['Milou', 'Luca']
         if not all(key in new_state for key in required_keys):
             return jsonify({
                 'success': False,

@@ -103,8 +103,8 @@ class FileStateStore(BaseJsonStore):
                     "reward": 0.2
                 },
                 "choreList": [
-                    {"name": "Take out trash", "date": datetime.fromisoformat("2025-12-10")},
-                    {"name": "Wash dishes", "date": datetime.fromisoformat("2025-12-11")}
+                    {"name": "Take out trash", "date": "2025-12-10"},
+                    {"name": "Wash dishes", "date": "2025-12-11"}
                 ]
             },
             "Luca": {
@@ -114,23 +114,11 @@ class FileStateStore(BaseJsonStore):
                     "reward": 0.1
                 },
                 "choreList": [
-                    {"name": "Clean room", "date": datetime.fromisoformat("2025-12-10")},
-                    {"name": "Do homework", "date": datetime.fromisoformat("2025-12-11")}
+                    {"name": "Clean room", "date": "2025-12-10"},
+                    {"name": "Do homework", "date": "2025-12-11"}
                 ]
             }
         }
-        config = self.config_store.load()
-        content = {}
-        
-
-        # Create state for each user based on their task count
-        for user_id in config['users'].keys():
-            task_count = len(config['personalTasks']) * 7
-            content[user_id] = [False] * task_count
-        
-        # Create state for general tasks
-        content['general'] = [False] * len(config['generalTasks']) * 7
-        return content
 
 
 

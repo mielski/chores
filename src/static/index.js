@@ -81,7 +81,17 @@ class ChoreManager {
     this.choresTarget = userData.config.tasksPerWeek;
   }
 
-  async update(giveCompliment = false) {
+  async updateFromAppState(stateData) {
+    // updates the widget state from the general app state
+    if (stateData && stateData[this.user]) {
+      this.setState(stateData[this.user]);
+      this.update();
+    } else {
+      console.warn(`No state data found for user ${this.user}`);
+    }
+  }
+
+  async update() {
     // assuming that we can use the currentConfig to get user info
 
     this.count = this.currentChores.length;
@@ -156,23 +166,11 @@ class ChoreManager {
         });
     }
 
-    if (giveCompliment) {
-      const complimentjes = currentConfig.messages || defaultComplimentjes;
-      const randomIndex = Math.floor(Math.random() * complimentjes.length);
-      const compliment = complimentjes[randomIndex];
 
-
-      if (this._timeOutId) clearTimeout(this._timeOutId);
-
-      this.progressBar.innerText = compliment;
-      this._timeOutId = setTimeout(
-        () => (this.progressBar.innerText = ""),
-        2000
-      );
-      if (progress === "100%") {
-        celebrationBurst();
-      }
+    if (this.choresTarget === this.count) {
+      celebrationBurst();
     }
+    
   }
 }
 
@@ -204,10 +202,10 @@ class App {
     // Constructor and initialization methods
   #setupChoreManagers() {
     // Create chore managers with app reference
-    this.children = [];
+    this.widgets = [];
     Array.from(document.querySelectorAll(".user-card[data-user]")).forEach(
       (card) =>
-        this.children.push(new ChoreManager(card, this))
+        this.widgets.push(new ChoreManager(card, this))
     );
   }
 
@@ -233,18 +231,10 @@ class App {
     })
   }
   
-  static async create() {
-    // create an app instances after loading config
-    console.log("Creating app instance with config:", currentConfig);
-
-    await configReady;
-    return new App();
-  }
-
   // Simple state management methods
   async getState() {
 
-    fetch("/api/state")
+    return fetch("/api/state")
       .then((response) => response.json())
       .then((result) => {
         return result.data;
@@ -277,13 +267,13 @@ class App {
 
 
   async update() {
-    // Update all chore managers
+    // Update all widgets
 
     try {
       const data = await this.getState();
       if (data) {
         console.log("App update - loaded state:", data);
-        self.children.forEach((widget) => widget.update());
+        this.widgets.forEach((widget) => widget.updateFromAppState(data));
       }
     } catch (error) {
       console.error("Error fetching state for update:", error);
@@ -605,8 +595,4 @@ function showInfo(message, title = null) {
 }
 
 // Initialize the application
-(async () => {
-  await storeState(true); // reset state on load
-  const app = await App.create();
-  globalThis.app = app; // Works in all environments
-})();
+const app = new App();
