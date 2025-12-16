@@ -8,7 +8,7 @@ function Chore(name, date = new Date()) {
 
 class ChoreManager {
   constructor(cardElement, app) {
-    this.card = cardElement;
+    this.card = cardElement; // card element is the container for the task information of this user
     this.user = cardElement.dataset.user;
     this.app = app; // Reference to app for state operations
 
@@ -157,52 +157,25 @@ class ChoreManager {
     }
 
     if (giveCompliment) {
-      // TODO
-    }
-  }
-}
+      const complimentjes = currentConfig.messages || defaultComplimentjes;
+      const randomIndex = Math.floor(Math.random() * complimentjes.length);
+      const compliment = complimentjes[randomIndex];
 
-// Usage - works for any number of cards
 
-class ProgressBar {
-  // Class to handle the progress bar updates
-  // It takes an HTML element and the total number of tasks as parameters
-  // It has a method to update the progress bar and optionally show a compliment
-  // It also handles the timeout for showing the compliment
-  constructor(element, totalTasks) {
-    // element: HTML element for the progress bar
-    // totalTasks: total number of tasks to complete (integer)
-    this.progressBar = element;
-    this.done = 0;
-    this.required = totalTasks;
-    this.timeoutId = undefined;
-  }
+      if (this._timeOutId) clearTimeout(this._timeOutId);
 
-  updateProgress(giveCompliment = false) {
-    const complimentjes = currentConfig.messages || defaultComplimentjes;
-    const randomIndex = Math.floor(Math.random() * complimentjes.length);
-    const compliment = complimentjes[randomIndex];
-
-    const progress =
-      Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
-    this.progressBar.style.width = progress;
-
-    if (this._timeOutId) clearTimeout(this._timeOutId);
-
-    if (giveCompliment) {
       this.progressBar.innerText = compliment;
       this._timeOutId = setTimeout(
-        () => (this.progressBar.innerText = progress),
+        () => (this.progressBar.innerText = ""),
         2000
       );
       if (progress === "100%") {
         celebrationBurst();
       }
-    } else {
-      this.progressBar.innerText = progress;
     }
   }
 }
+
 
 // Default fallback values
 const defaultComplimentjes = [
@@ -224,10 +197,42 @@ class App {
   constructor() {
     this.#setupChoreManagers();
     // this.#generateTaskTable();
-    // this.#setupEventListeners();
+    this.#setupEventListeners();
     this.update();
   }
 
+    // Constructor and initialization methods
+  #setupChoreManagers() {
+    // Create chore managers with app reference
+    this.children = [];
+    Array.from(document.querySelectorAll(".user-card[data-user]")).forEach(
+      (card) =>
+        this.children.push(new ChoreManager(card, this))
+    );
+  }
+
+  #setupEventListeners() {
+
+    // event for reset button
+    const buttonReset = document.getElementById("reset");
+    buttonReset.addEventListener("click", async () => {
+      fetch("/api/reset", { method: "POST" })
+      .then((response) => response.json())
+      .then((result) => {
+        if (result.success) {
+          showSuccess("Application state has been reset", "Reset Successful");
+          this.update();
+        } else {
+          showError("Failed to reset application state", "Reset Failed");
+        } 
+      })
+      .catch((error) => {
+        console.error("Error resetting application state:", error);
+        showError("Error resetting application state", "Reset Failed");
+      });
+    })
+  }
+  
   static async create() {
     // create an app instances after loading config
     console.log("Creating app instance with config:", currentConfig);
@@ -238,59 +243,47 @@ class App {
 
   // Simple state management methods
   async getState() {
-    try {
-      const response = await fetch("/api/state");
-      const result = await response.json();
-      return result.data;
-    } catch (error) {
-      console.error("Error fetching state:", error);
-      return null;
+
+    fetch("/api/state")
+      .then((response) => response.json())
+      .then((result) => {
+        return result.data;
+      })
+      .catch((error) => {
+        console.error("Error fetching state:", error);
+        return null;
+      });
     }
-  }
 
   async saveState(state) {
-    try {
-      const response = await fetch("/api/state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(state),
-      });
-      const result = await response.json();
+    // save state through backend API
+    return fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state),
+    })
+      .then((response) => response.json())
+      .then((result) => {
       if (!result.success) {
         throw new Error(result.error);
       }
       return true;
-    } catch (error) {
+      })
+      .catch((error) => {
       console.error("Error saving state:", error);
       throw error;
-    }
+      });
   }
 
-  // Constructor and initialization methods
 
-  #setupChoreManagers() {
-    // Create chore managers with app reference
-    this.choreManagers = {};
-    Array.from(document.querySelectorAll(".user-card[data-user]")).forEach(
-      (card) =>
-        (this.choreManagers[card.dataset.user] = new ChoreManager(card, this))
-    );
-  }
-
-  async update(giveCompliment = false) {
+  async update() {
     // Update all chore managers
+
     try {
       const data = await this.getState();
       if (data) {
-        Object.entries(data).forEach(([userId, userData]) => {
-          if (this.choreManagers[userId]) {
-            this.choreManagers[userId].setState(userData);
-          }
-        });
-
-        Object.values(this.choreManagers).forEach((manager) =>
-          manager.update(giveCompliment)
-        );
+        console.log("App update - loaded state:", data);
+        self.children.forEach((widget) => widget.update());
       }
     } catch (error) {
       console.error("Error fetching state for update:", error);
