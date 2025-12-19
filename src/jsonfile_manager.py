@@ -88,18 +88,14 @@ class FileStateStore(BaseJsonStore):
     """
     _file_name = 'household_state.json'
 
-    def __init__(self, config_store):
-        # param config_store: Instance of FileConfigStore
-        self.config_store = config_store
-
     def get_default_content(self) -> dict:
         """Generate default state structure based on current configuration."""
         
         return {
             "Milou": {
                 "config": {
-                    "tasksPerWeek": 10,
-                    "allowance": 2.0,
+                    "tasksPerWeek": 9,
+                    "allowance": 3.0,
                     "reward": 0.2
                 },
                 "choreList": [
@@ -109,7 +105,7 @@ class FileStateStore(BaseJsonStore):
             },
             "Luca": {
                 "config": {
-                    "tasksPerWeek": 20,
+                    "tasksPerWeek": 6,
                     "allowance": 1.0,
                     "reward": 0.1
                 },
@@ -124,4 +120,4 @@ class FileStateStore(BaseJsonStore):
 
 # Initialize stores with new names
 config_store = FileConfigStore()
-state_store = FileStateStore(config_store=config_store)
+state_store = FileStateStore()

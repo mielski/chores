@@ -147,7 +147,7 @@ class CosmosStateStore:
     Compatible interface with FileStateStore.
     """
     
-    def __init__(self, cosmos_manager: CosmosDBManager, config_store: CosmosConfigStore, 
+    def __init__(self, cosmos_manager: CosmosDBManager,
                  user_id: str = "default"):
         """
         Args:
@@ -156,7 +156,6 @@ class CosmosStateStore:
             user_id: Partition key for data isolation (default: "default")
         """
         self.cosmos = cosmos_manager
-        self.config_store = config_store
         self.user_id = user_id
         self.container = cosmos_manager.state_container
         self.doc_id = "state"
@@ -194,20 +193,29 @@ class CosmosStateStore:
     
     def reset(self) -> Dict[str, Any]:
         """Reset state using the app configuration to define the structure"""
-        config = self.config_store.load()
-        state = {}
-        
-        # Create state for each user based on their task count
-        for user_id in config['users'].keys():
-            task_count = len(config['personalTasks']) * 7
-            state[user_id] = [False] * task_count
-        
-        # Create state for general tasks
-        state['general'] = [False] * len(config['generalTasks']) * 7
+        state = {
+            "Milou": {
+                "config": {
+                    "tasksPerWeek": 9,
+                    "allowance": 3.0,
+                    "reward": 0.2
+                },
+                "choreList": [
+                ]
+            },
+            "Luca": {
+                "config": {
+                    "tasksPerWeek": 6,
+                    "allowance": 1.0,
+                    "reward": 0.1
+                },
+                "choreList": [
+                ]
+            }
+        }
         
         self.save(state)
         logger.info("Task state reset to match configuration")
-        logger.info(state)
         return state
 
 
@@ -227,6 +235,6 @@ def create_cosmos_stores(user_id: str = "default"):
     """
     cosmos_manager = CosmosDBManager()
     config_store = CosmosConfigStore(cosmos_manager, user_id)
-    state_store = CosmosStateStore(cosmos_manager, config_store, user_id)
+    state_store = CosmosStateStore(cosmos_manager, user_id)
     
     return config_store, state_store
