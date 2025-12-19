@@ -90,21 +90,26 @@
           role="tabpanel"
           aria-labelledby="ex1-tab-1"
         >
-        <div class="tab-pane fade show active" id="ex1-pills-1">
-  <!-- Pane-specific toolbar -->
-  <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
-    <h5 class="mb-0">Weekly Tasks</h5>
-    <div class="btn-group btn-group-sm">
-      <button class="btn btn-outline-warning" id="reset-tasks">
-        <i class="fas fa-undo me-1"></i>Reset Week
-      </button>
-      <button class="btn btn-outline-primary" id="export-tasks">
-        <i class="fas fa-download me-1"></i>Export
-      </button>
-    </div>
-  </div>
-  <!-- Your existing content -->
-</div>
+          <div class="tab-pane fade show active" id="ex1-pills-1">
+            <!-- Pane-specific toolbar -->
+            <div
+              class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded"
+            >
+              <h5 class="mb-0">Weekly Tasks</h5>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-warning" id="reset-tasks">
+                  <i class="fas fa-undo me-1"></i>Reset
+                </button>
+                <button class="btn btn-outline-success" id="end-week-tasks">
+                  <i class="fas fa-calendar-check me-1"></i>Einde Week
+                </button>
+                <button class="btn btn-outline-primary" id="edit-tasks">
+                  <i class="fas fa-edit me-1"></i>Bewerk
+                </button>
+              </div>
+            </div>
+            <!-- Your existing content -->
+          </div>
           <div class="row justify-content-center">
             <div class="col-md-8 col-lg mb-2 mx-2">
               <div class="card shadow">
@@ -145,8 +150,7 @@
                     <div
                       class="chore-list"
                       style="max-height: 300px; overflow-y: auto"
-                    >
-                    </div>
+                    ></div>
                   </div>
                 </div>
               </div>
