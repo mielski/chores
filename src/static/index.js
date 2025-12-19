@@ -212,7 +212,7 @@ class App {
   #setupEventListeners() {
 
     // event for reset button
-    const buttonReset = document.getElementById("reset");
+    const buttonReset = document.getElementById("reset-tasks");
     buttonReset.addEventListener("click", async () => {
       fetch("/api/reset", { method: "POST" })
       .then((response) => response.json())
@@ -285,48 +285,8 @@ class App {
 // setup of the flow
 function setupEventListeners() {
   // references to progress bars and buttons used in functions
-  const taskButtonsGeneral = document.querySelectorAll("table .general-task");
-  const buttonReset = document.getElementById("reset");
+  const buttonReset = document.getElementById("reset-tasks");
 
-  // Event listeners for user buttons
-  Object.keys(currentConfig.users).forEach((userId) => {
-    const userButtons = document.querySelectorAll(`.btn-${userId}`);
-    userButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        let countChange = button.classList.contains("active") ? -1 : 1;
-        button.classList.toggle("active");
-
-        if (window.progressBars[userId]) {
-          window.progressBars[userId].done += countChange;
-          window.progressBars[userId].updateProgress(countChange === 1);
-        }
-
-        if (countChange === 1) {
-          // Show confetti based on user
-          if (userId === "milou") {
-            sideConfetti("left");
-          } else if (userId === "luca") {
-            sideConfetti("right");
-          } else {
-            sideConfetti("both");
-          }
-        }
-        storeState();
-      });
-    });
-  });
-
-  taskButtonsGeneral.forEach((button) => {
-    button.addEventListener("click", () => {
-      const isActive = button.classList.toggle("active");
-      button.innerText = isActive ? " 🎉 " : "...";
-      if (isActive) {
-        // Big celebration for general tasks
-        sideConfetti("both");
-      }
-      storeState();
-    });
-  });
 
   buttonReset.addEventListener("click", async () => {
     await storeState(true);
