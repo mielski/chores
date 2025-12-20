@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize storage managers using factory method
-config_store, state_store = create_storage_managers(user_id="household")
+config_store, state_store = create_storage_managers(user_id="household2")
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv('SECRET')

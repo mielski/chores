@@ -1,31 +1,76 @@
 # Household Task Tracker
 
-A simple web application for tracking household tasks between family members with shared state across devices.
+A web application for tracking household tasks and allowances for multiple family members.
 
 ## Features
 
 - ✅ Track tasks for multiple family members with configurable weekly goals
-- 📊 Progress bars showing task completion with customizable colors
-- 🎉 Celebratory messages for completed tasks with configurable messages
+- 📊 Progress bars showing task completion
 - 💾 Persistent state shared across all devices on the network
 - 📱 Mobile-friendly responsive design
 - 🔄 Real-time state synchronization
 - 🔒 Protected with simple user/password authentication
-- 🌍 Web-based configuration interface for full customization
-- ⚙️ Customizable UI themes and tasks
 
 ## Architecture
 
 The application consists of:
 
 - **Frontend**: HTML/CSS/JavaScript single-page application with dynamic configuration loading
-- **Backend**: Flask API for state management
-- **Storage**: Simple JSON file for state persistence
+- **Backend**: Flask API for state management + Cosmos DB for state storage
+- **Storage**: Simple JSON file storage for configuration and state 
 - **Deployment**: Docker container for easy deployment, using public Docker Hub registry
-- **Configuration**: Web-based UI for customizing tasks, users, and settings
 
 ## Quick Start
 
+### Option 1: Local Development with Python
+1. **Prerequisites**
+
+   - Python 3.8+ installed
+   - Git for cloning the repository
+   - dependencies installed via pip:
+     ```bash
+     pip install -r src/requirements.txt
+     ```
+   - create a `.env` file in the root directory with the following content:
+
+     ```plaintext
+     SECRET=your_secret_key
+     APP_USERNAME=your_username
+     APP_PASSWORD=your_password
+     ```
+2. **Run the Application**
+
+   ```bash
+   cd src
+   python app.py
+   ```
+
+3. **Access the Application**
+   - Open http://localhost:8080 in your browser
+   - Login with the credentials from your `.env` file
+   - Click the ⚙️ (settings) button to configure tasks and users
+   - The app will be accessible from any device on your local network using your computer's IP address
+
+4 **Optionally, use cosmos db emulator**
+
+   - Download and install the Cosmos DB emulator from https://learn.microsoft.com/en-us/azure/cosmos-db/ local-emulator
+   - Start the emulator and ensure it's running
+   - Update your `.env` file with the following settings:
+   
+      ```plaintext
+      USE_COSMOS_DB=true
+      COSMOS_ENDPOINT=https://localhost:8081
+      COSMOS_KEY=your_emulator_key
+   
+   - Restart the application to use Cosmos DB for state storage
+   
+   now you should see logs indicating connection to Cosmos DB
+   you can also verify by checking the emulator data explorer
+
+   Note: When using the Cosmos DB emulator, ensure that your firewall settings allow connections to the emulator ports.
+
+   ```
+   
 ### Option 1: Local Development with Docker
 
 1. **Prerequisites**
@@ -39,6 +84,8 @@ The application consists of:
      APP_USERNAME=your_username
      APP_PASSWORD=your_password
      ```
+
+   - Optionally, use the cosmos db emulator for local testing (see Development Environment Setup section)
 
 2. **Deploy Locally**
 
@@ -129,7 +176,10 @@ household-tracker/
 ├── infra/
 │   ├── main.bicep         # Azure infrastructure as code
 │   └── main.parameters.json
-└── deploy-local.*         # Local deployment scripts
+├── deploy-local.*         # Local deployment scripts
+├── deploy-infra.sh        # Azure infrastructure deployment script
+├── build-and-push.sh      # Docker build and push script, use to push new version to Docker Hub and 
+                             redeploy
 ```
 
 ### API Endpoints
@@ -174,9 +224,26 @@ The application uses two JSON files for data persistence:
 **Task State (`household_state.json`):**
 ```json
 {
-  "milou": [false, false, false, false, false, false, false],
-  "luca": [false, false, false, false, false],
-  "general": [false, false]
+   "Milou":  {
+      "choreList": [
+         {
+         "date": "2025-12-10",
+         "name": "Take out trash"
+         },
+         {
+         "date": "2025-12-11",
+         "name": "Wash dishes"
+         }
+      ],
+      "config": {
+         "allowance": 3, // weekly allowance in euros
+         "reward": 0.2, // reward per bonus completed task in euros
+         "tasksPerWeek": 9 // number of tasks to complete per week
+      }
+  },
+   "Luca":  {
+      ... // similar structure as Milou
+   }
 }
 ```
 
@@ -188,6 +255,7 @@ The state automatically adjusts when configuration changes. For example, if you 
 
 - **Container App**: Hosts the application
 - **Container Apps Environment**: Provides the runtime environment
+- **Cosmos DB Account**: Stores application state
 - **Log Analytics Workspace**: Collects application logs
 
 ### Cost Optimization
@@ -195,6 +263,7 @@ The state automatically adjusts when configuration changes. For example, if you 
 - Uses Azure Container Apps consumption-based pricing
 - Minimal resource allocation (0.25 CPU, 0.5GB memory)
 - Auto-scaling from 1-3 replicas based on load
+- Consumption-based Cosmos DB with low RU/s for cost-effective storage
 
 ### Security Features
 
@@ -261,80 +330,7 @@ The state automatically adjusts when configuration changes. For example, if you 
    # View resource status in Azure portal
    ```
 
-## Configuration
 
-### Web-based Configuration Interface
-
-Access the configuration interface by clicking the ⚙️ (settings) button in the main application or visiting `/config` directly.
-
-**Available Configuration Options:**
-
-1. **Users Management**
-   - Add/remove family members
-   - Set individual weekly task goals (1-14 tasks per week)
-   - Customize progress bar colors
-   - Set display names
-
-2. **Personal Tasks**
-   - Add/remove personal tasks that appear in the main table
-   - Tasks are shared across all family members
-   - Examples: "Vaatwasser", "Koken", "Boodschappen"
-
-3. **General Tasks**
-   - Add/remove household tasks that don't assign to specific people
-   - Examples: "Huiskamer opruimen", "Takken verzorgen"
-
-4. **Celebration Messages**
-   - Customize the compliments shown when tasks are completed
-   - Add motivational messages in any language
-
-### Configuration Tips
-
-- **Weekly Task Goals**: Set realistic goals. If someone consistently completes more than their goal, consider increasing it.
-- **Colors**: Choose contrasting colors for better visibility, especially on mobile devices.
-- **Task Names**: Keep them short for better display on mobile screens.
-- **Reset Warning**: Changing configuration resets all current task progress.
-
-## Customization
-
-### Quick Customization via Web Interface
-
-The easiest way to customize the application is through the web interface:
-
-1. Navigate to `/config` or click the ⚙️ button
-2. Modify users, tasks, or messages as needed
-3. Click "Save Configuration"
-4. Task states will automatically reset to match the new configuration
-
-### Advanced Customization
-
-For advanced users who want to modify the configuration programmatically:
-
-#### Data Management Best Practices
-
-**Configuration Changes:**
-- Always use the web interface for safety and validation
-- Configuration changes automatically trigger state resets
-- Backup your `task_config.json` before major changes
-
-**State Management:**
-- The application automatically handles state resizing when configuration changes
-- If you add a user, their state starts with all tasks incomplete
-- If you reduce someone's weekly tasks, excess completed tasks are removed
-- If you increase someone's weekly tasks, new tasks start as incomplete
-
-**File Locations:**
-- Configuration: `src/task_config.json` (create your own or let app generate defaults)
-- State: `src/household_state.json` (automatically managed)
-- Both files are automatically created if missing
-
-### Migrating from Static Configuration
-
-If you're upgrading from a previous version with hardcoded tasks:
-
-1. Start the application - it will create default configuration files
-2. Use the web interface to recreate your previous task setup
-3. The new system is fully backward compatible
 
 ## Development Environment Setup
 
