@@ -196,7 +196,7 @@ class App {
     this.update();
     this.getState()
       .then((state) => {
-        this.previousStates.push(state);
+        if (state) this.previousStates.push(state);
     });
   }
 
@@ -266,12 +266,13 @@ class App {
   }
 
   async undoLastChange() {
-    this.previousStates.pop();
-    const lastState = this.previousStates[this.previousStates.length - 1];
-    if (!lastState) {
+        if (this.previousStates.length <= 1) {
       showWarning("No previous state to undo to.", "Undo");
       return;
     }
+    this.previousStates.pop();
+    const lastState = this.previousStates[this.previousStates.length - 1];
+
     await this.saveState(lastState, true);
     await this.update();
     this.buttonUndo.disabled = this.previousStates.length <= 1;
