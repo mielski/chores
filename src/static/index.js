@@ -46,7 +46,6 @@ class ChoreManager {
       return; // ignore empty input
     }
     console.log(`${this.user} selected ${choreName}`);
-    showSuccess(`Chore "${choreName}" added for ${this.user}`, "Chore Added");
 
     // Add chore and save through app
     this.currentChores.push(new Chore(choreName));
@@ -212,8 +211,8 @@ class App {
   const buttonEdit = document.getElementById("edit-tasks");
 
   buttonReset.addEventListener("click", async () => {
-    await storeState(true);
-    await updateApp();
+    await this.resetState();
+    await this.update();
   });
 
   buttonEndWeek.addEventListener("click", async () => {
@@ -235,6 +234,25 @@ class App {
       .catch((error) => {
         console.error("Error fetching state:", error);
         return null;
+      });
+  }
+
+  async resetState() {
+    // reset state through backend API
+    return fetch("/api/reset", {
+      method: "POST",
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        if (!result.success) {
+          console.warning("Failed to reset state:", result.error);
+          showError("Failed to reset state: " + result.error);
+          throw new Error(result.error);
+        }
+      })
+      .catch((error) => {
+        console.error("Error resetting state:", error);
+        throw error;
       });
   }
 
