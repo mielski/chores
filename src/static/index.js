@@ -189,10 +189,15 @@ const defaultComplimentjes = [
 
 class App {
   constructor() {
+    this.previousStates = [];  // stores the last 3 previous states for undo operations
     this.#setupChoreManagers();
     // this.#generateTaskTable();
     this.#setupEventListeners();
     this.update();
+    this.getState()
+      .then((state) => {
+        this.previousStates.push(state);
+    });
   }
 
   // Constructor and initialization methods
@@ -208,7 +213,7 @@ class App {
     // event for reset button
   const buttonReset = document.getElementById("reset-tasks");
   const buttonEndWeek = document.getElementById("end-week-tasks");
-  const buttonEdit = document.getElementById("edit-tasks");
+  this.buttonUndo = document.getElementById("undo-tasks");
 
   buttonReset.addEventListener("click", async () => {
     await this.resetState();
@@ -219,8 +224,8 @@ class App {
     await handleEndWeek();
   });
 
-  buttonEdit.addEventListener("click", () => {
-    toggleEditMode();
+  this.buttonUndo.addEventListener("click", () => {
+    this.undoLastChange();
   });
   }
 
@@ -249,6 +254,10 @@ class App {
           showError("Failed to reset state: " + result.error);
           throw new Error(result.error);
         }
+        else {
+          this.saveState(result.data);
+          return true
+        }
       })
       .catch((error) => {
         console.error("Error resetting state:", error);
@@ -256,7 +265,19 @@ class App {
       });
   }
 
-  async saveState(state) {
+  async undoLastChange() {
+    this.previousStates.pop();
+    const lastState = this.previousStates[this.previousStates.length - 1];
+    if (!lastState) {
+      showWarning("No previous state to undo to.", "Undo");
+      return;
+    }
+    await this.saveState(lastState, true);
+    await this.update();
+    this.buttonUndo.disabled = this.previousStates.length <= 1;
+  }
+
+  async saveState(state, isUndo=false) {
     // save state through backend API
     return fetch("/api/state", {
       method: "POST",
@@ -273,8 +294,20 @@ class App {
       .catch((error) => {
         console.error("Error saving state:", error);
         throw error;
+      })
+      .then(() => {
+        if (!isUndo) {
+          // Store previous state for undo functionality
+          this.previousStates.push(state);
+          this.buttonUndo.disabled = false;
+          if (this.previousStates.length > 3) {
+            this.previousStates.shift(); // Keep only last 3 states
+          }
+        }
       });
   }
+
+
 
   async update() {
     // Update all widgets
@@ -289,6 +322,24 @@ class App {
       console.error("Error fetching state for update:", error);
       showError("Failed to update application state");
     }
+  }
+}
+
+// Handle end of week functionality
+async function handleEndWeek() {
+  try {
+    // Here you can implement week ending logic like:
+    // - Save current week's progress
+    // - Archive completed tasks
+    // - Generate weekly report
+    // - Reset for new week
+    showSuccess("Week ended successfully! Progress saved.", "End of Week");
+
+    // For now, just show a success message
+    // You can expand this functionality later
+  } catch (error) {
+    console.error("Error ending week:", error);
+    showError("Failed to end week. Please try again.", "Error");
   }
 }
 
@@ -425,95 +476,6 @@ function showWarning(message, title = null) {
   showToast(message, "warning", title);
 }
 
-// Handle end of week functionality
-async function handleEndWeek() {
-  try {
-    // Here you can implement week ending logic like:
-    // - Save current week's progress
-    // - Archive completed tasks
-    // - Generate weekly report
-    // - Reset for new week
-    showSuccess("Week ended successfully! Progress saved.", "End of Week");
-
-    // For now, just show a success message
-    // You can expand this functionality later
-  } catch (error) {
-    console.error("Error ending week:", error);
-    showError("Failed to end week. Please try again.", "Error");
-  }
-}
-
-// Toggle edit mode for task management
-function toggleEditMode() {
-  const editButton = document.getElementById("edit-tasks");
-  const isEditMode = editButton.classList.contains("active");
-
-  if (isEditMode) {
-    // Exit edit mode
-    editButton.classList.remove("active");
-    editButton.innerHTML = '<i class="fas fa-edit me-1"></i>Bewerk';
-    exitEditMode();
-  } else {
-    // Enter edit mode
-    editButton.classList.add("active");
-    editButton.innerHTML = '<i class="fas fa-times me-1"></i>Stop Bewerk';
-    enterEditMode();
-  }
-}
-
-function enterEditMode() {
-  // Add edit functionality to all task items
-  const allChoreItems = document.querySelectorAll(".chore-item");
-
-  allChoreItems.forEach((choreItem) => {
-    // Add selection checkbox
-    if (!choreItem.querySelector(".chore-selection")) {
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.className = "form-check-input chore-selection me-2";
-      choreItem.prepend(checkbox);
-    }
-
-    // Add delete button
-    if (!choreItem.querySelector(".chore-delete")) {
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "btn btn-sm btn-outline-danger chore-delete ms-2";
-      deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-      deleteBtn.addEventListener("click", () => deleteChore(choreItem));
-      choreItem.appendChild(deleteBtn);
-    }
-  });
-
-  // Show bulk action buttons
-  showBulkActionButtons();
-  showSuccess("Edit mode enabled. Select tasks to delete.", "Edit Mode");
-}
-
-function exitEditMode() {
-  // Remove edit functionality
-  document.querySelectorAll(".chore-selection").forEach((el) => el.remove());
-  document.querySelectorAll(".chore-delete").forEach((el) => el.remove());
-
-  // Hide bulk action buttons
-  hideBulkActionButtons();
-  showSuccess("Edit mode disabled.", "Edit Mode");
-}
-
-function deleteChore(choreItem) {
-  // Implement individual chore deletion
-  choreItem.remove();
-  showSuccess("Task deleted.", "Delete");
-}
-
-function showBulkActionButtons() {
-  // Add bulk action buttons (delete selected, etc.)
-  // This would create additional UI elements for bulk operations
-}
-
-function hideBulkActionButtons() {
-  // Remove bulk action buttons
-  // This would clean up the bulk operation UI elements
-}
 
 function showInfo(message, title = null) {
   showToast(message, "info", title);
@@ -521,3 +483,5 @@ function showInfo(message, title = null) {
 
 // Initialize the application
 const app = new App();
+
+window.globalThis.app = app; // expose app for debugging purposes
