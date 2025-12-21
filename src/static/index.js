@@ -206,7 +206,7 @@ class App {
       console.error("Error initializing app state:", error);
       showError("Failed to initialize application state");
     });
-    
+  
   }
 
   // Constructor and initialization methods
@@ -295,7 +295,7 @@ class App {
         this.state = newState;
         if (!isUndo) {
           // Store previous state for undo functionality
-          this.previousStates.push(this.state);
+          this.previousStates.push(this.getState());
           this.buttonUndo.disabled = false;
           if (this.previousStates.length > 3) {
             this.previousStates.shift(); // Keep only last 3 states
