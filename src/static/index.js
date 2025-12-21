@@ -1,348 +1,354 @@
 // project configuration constants
 "use strict";
 
-class ProgressBar {
-  // Class to handle the progress bar updates
-  // It takes an HTML element and the total number of tasks as parameters
-  // It has a method to update the progress bar and optionally show a compliment
-  // It also handles the timeout for showing the compliment
-  constructor(element, totalTasks) {
-    // element: HTML element for the progress bar
-    // totalTasks: total number of tasks to complete (integer)
-    this.progressBar = element;
-    this.done = 0;
-    this.required = totalTasks;
-    this.timeoutId = undefined;
+class ChoreManager {
+  constructor(cardElement, app) {
+    this.card = cardElement; // card element is the container for the task information of this user
+    this.user = cardElement.dataset.user;
+    this.app = app; // Reference to app for state operations
+
+    // initialize empty state
+    this.currentChores = [];
+    this.choresTarget = 0;
+    this.count = 0;
+
+    // Cache elements
+    this.elements = {
+      counter: cardElement.querySelector(".user-card__chore-count"),
+      progress: cardElement.querySelector(".user-card__progress"),
+      remaining: cardElement.querySelector(".user-card__remaining"),
+      list: cardElement.querySelector(".chore-list"),
+      nameInput: cardElement.querySelector(".user-card__new-chore-input"),
+      buttonAdd: cardElement.querySelector(".user-card__new-chore-button"),
+    };
+
+    // Setup event listeners
+    this.elements.buttonAdd.addEventListener(
+      "click",
+      this.#handlerAddChore.bind(this)
+    );
+    this.elements.nameInput.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        this.#handlerAddChore();
+      }
+    });
   }
 
-  updateProgress(giveCompliment = false) {
-    const complimentjes = currentConfig.messages || defaultComplimentjes;
-    const randomIndex = Math.floor(Math.random() * complimentjes.length);
-    const compliment = complimentjes[randomIndex];
+  #handlerAddChore() {
+    // event handler for adding a new chore
+    // creates a new chore from the input elements
+    // updates the app state through the app reference
+    const choreName = this.elements.nameInput.value.trim();
+    const choreDateString = new Date().toISOString().slice(0, 10); // current date in ISO format
+    if (!choreName) {
+      return; // ignore empty input
+    }
+    console.log(`${this.user} selected ${choreName}`);
 
-    const progress =
-      Math.round(100 * Math.min(this.done / this.required, 1), 0) + "%";
-    this.progressBar.style.width = progress;
+    // Add chore and save through app
+    this.currentChores.push({name: choreName, date: choreDateString});
 
-    if (this._timeOutId) clearTimeout(this._timeOutId);
+    const state = this.app.getState();
+    state[this.user].choreList = this.currentChores
+    this.app.setState(state);
 
-    if (giveCompliment) {
-      this.progressBar.innerText = compliment;
-      this._timeOutId = setTimeout(
-        () => (this.progressBar.innerText = progress),
-        2000
-      );
-      if (progress === "100%") {celebrationBurst()};
+    this.elements.nameInput.value = ""; // clear input
+    this.updateWidget();
+  }
+
+  setState(userData) {
+    // set the state of the chore manager from data
+    this.currentChores = [...userData.choreList] || [];
+    this.choresTarget = userData.config.tasksPerWeek;
+  }
+
+  async updateFromAppState() {
+    // updates the widget state from the general app state
+    const stateData = this.app.getState();
+    if (stateData && stateData[this.user]) {
+      this.setState(stateData[this.user]);
+      this.updateWidget();
     } else {
-      this.progressBar.innerText = progress;
+      console.warn(`No state data found for user ${this.user}`);
+    }
+  }
+
+  async updateWidget() {
+    // assuming that we can rely on the widget state 
+
+    this.count = this.currentChores.length;
+
+    // update the elements
+    this.elements.counter.textContent = `${this.count} / ${this.choresTarget} chores`;
+
+    // update progress bar
+    const percentage = Math.round(
+      100 * Math.min(this.count / this.choresTarget, 1),
+      0
+    );
+    const red = Math.round(220 - percentage * 2.2); // 220 -> 0
+    const green = Math.round(percentage * 2.2); // 0 -> 220
+    const blue = 0;
+
+    this.elements.progress.style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+    this.elements.progress.style.width = percentage + "%";
+
+    // update the remaining tasks element
+    this.elements.remaining.textContent =
+      this.count < this.choresTarget
+        ? `nog ${this.choresTarget - this.count} te gaan`
+        : "allemaal klaar!";
+
+    // update the chore list
+    if (this.count === 0) {
+      this.elements.list.innerHTML = `<p class="small text-muted text-center py-4">
+        No chores yet this week
+      </p>`;
+    } else {
+      this.elements.list.innerHTML = "";
+      this.currentChores
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .forEach((chore) => {
+          const choreElement = document.createElement("div");
+          choreElement.className =
+            "chore border-start border-success border-3 ps-2 mb-2 shadow-sm p-2";
+
+          const choreDate = new Date(chore.date);
+          const today = new Date();
+          const isToday = choreDate.getTime() + 3600_000 * 24 > today.valueOf()
+          const isYesterday =
+            choreDate.getTime() + 3600_000 * 48 > today.valueOf() && !isToday;
+
+          let displayDate = choreDate.toLocaleDateString(
+            window.navigator.language,
+            {
+              day: "numeric",
+              month: "short",
+            }
+          );
+
+          if (isToday) {
+            displayDate = "vandaag";
+          } else if (isYesterday) {
+            displayDate = "gisteren";
+          }
+
+          choreElement.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="task__title fw-medium">${chore.name}</span>
+            <small class="task__date"><time datetime="${chore.date}">${displayDate}</time></small>
+          </div>
+        `;
+          this.elements.list.appendChild(choreElement);
+        });
+    }
+
+    if (this.choresTarget === this.count) {
+      celebrationBurst();
     }
   }
 }
 
+class App {
+  constructor() {
+    this.previousStates = [];  // stores the last 3 previous states for undo operations
+    this.state = null; // current application state
+    this.#setupChoreManagers();
+    // this.#generateTaskTable();
+    this.#setupEventListeners();
 
-// Default fallback values
-const defaultComplimentjes = [
-  "lekker bezig! 🚀",
-  "ga zo door! 🌟",
-  "held! 💪",
-  "knapperd! 😎",
-  "je hebt jezelf overtroffen! 🎉",
-  "je bent een topper! ⭐",
-  "fantastisch werk! 👏",
-  "je maakt het verschil! 🌈",
-  "je rockt! 🎸",
-  "briljant gedaan! 💡",
-  "superster! 🌟",
-  "gewoon geweldig! 🏆",
-];
-
-
-
-// Initialize app configuration and then generate table
-async function initializeApp() {
-  console.log("Initializing app, current config:", currentConfig);
-
-  await loadAppConfig();
-  console.log("App config after loading:", currentConfig);
-  setupProgressBars();
-  generateTaskTable();
-  setupEventListeners();
-  updateApp();
-}
-
-// Load configuration from API
-async function loadAppConfig() {
-  // wait for the configuration to be ready
-  // log errors and use fallback if needed
-  // do not block the caller, so no await or return here!
-  try {
-    const result = await configReady;
-    console.log("promise result:", result);
-  } catch (error) {
-    console.error("Error loading configuration:", error);
-  }
-}
-/* High level functions of the app */
-
-// setup of the initial table
-function generateTaskTable() {
-  // run once on page load to create the tasks from the configuration
-  // and remove the template row
-
-  const tableBody = document.querySelector("tbody");
-  const tableTemplateRow = tableBody.lastElementChild;
-
-  function addRow(taskname) {
-    const row = tableTemplateRow.cloneNode(true);
-    row.firstElementChild.textContent = taskname;
-    tableBody.appendChild(row);
   }
 
-  // Add general tasks first
-  currentConfig.generalTasks.forEach((taskName) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td scope="row">${taskName}</td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-      <td><button class="btn btn-outline-primary general-task" autocomplete="off">...</button></td>
-    `;
-    tableBody.insertBefore(row, tableTemplateRow);
-  });
+  // Constructor related methods
+  // --------------------------------------------------------------
 
-  // Add personal tasks
-  currentConfig.personalTasks.forEach((taskName) => {
-    addRow(taskName);
-  });
-
-  tableTemplateRow.remove(); // remove the template element
-
-  // Update CSS colors for users
-  _updateUserColors();
-}
-
-function _updateUserColors() {
-  // Create dynamic CSS for user colors
-  const style = document.createElement("style");
-  let css = "";
-
-  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    css += `
-      #progress-${userId} {
-        background-color: ${userConfig.color} !important;
+  async init() {
+    // any async initialization can go here
+    return this.getStateFromBackend()
+    .then((state) => {
+      if (state) {
+        this.state = state;
+        this.previousStates.push(state);
+        this.updateWidgets();
       }
-      .btn-${userId} {
-        border-color: ${userConfig.color};
-        color: ${userConfig.color};
-      }
-      .btn-${userId}.active {
-        background-color: ${userConfig.color};
-        border-color: ${userConfig.color};
-      }
-      .btn-${userId}:hover {
-        background-color: ${userConfig.color};
-      }
-    `;
+    })
+    .catch((error) => {
+      console.error("Error initializing app state:", error);
+      showError("Failed to initialize application state");
+    });
+  
   }
 
-  style.innerHTML = css;
-  document.head.appendChild(style);
-
-  // Update progress bar labels
-  for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    const label =
-      window.progressBars[userId].progressBar?.parentElement
-        ?.previousElementSibling;
-    if (label) label.textContent = userConfig.displayName;
+  // Constructor and initialization methods
+  #setupChoreManagers() {
+    // Create chore managers with app reference
+    this.widgets = [];
+    Array.from(document.querySelectorAll(".user-card[data-user]")).forEach(
+      (card) => this.widgets.push(new ChoreManager(card, this))
+    );
   }
-}
 
-function setupProgressBars() {
-  // Create progress bars for each user
-  window.progressBars = {};
-    for (const [userId, userConfig] of Object.entries(currentConfig.users)) {
-    const progressElement = document.getElementById(`progress-${userId}`);
-    if (progressElement) {
-      window.progressBars[userId] = new ProgressBar(
-        progressElement,
-        userConfig.tasksPerWeek
-      );
-    }
+  #setupEventListeners() {
+    // event for reset button
+    const buttonReset = document.getElementById("reset-tasks");
+    const buttonEndWeek = document.getElementById("end-week-tasks");
+    this.buttonUndo = document.getElementById("undo-tasks");
+
+    buttonReset.addEventListener("click", async () => {
+      console.log('clicked button reset');
+      
+      await this.resetState();
+      console.log('state reset, updating widgets');
+      console.log(this.state);
+      
+      this.updateWidgets();
+    });
+
+    buttonEndWeek.addEventListener("click", async () => {
+      await handleEndWeek();
+    });
+
+    this.buttonUndo.addEventListener("click", () => {
+      this.undoLastChange();
+    });
   }
-}
 
-// setup of the flow
-function setupEventListeners() {
-  // references to progress bars and buttons used in functions
-  const taskButtonsGeneral = document.querySelectorAll("table .general-task");
-  const buttonReset = document.getElementById("reset");
-
-  // Event listeners for user buttons
-  Object.keys(currentConfig.users).forEach((userId) => {
-    const userButtons = document.querySelectorAll(`.btn-${userId}`);
-    userButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        let countChange = button.classList.contains("active") ? -1 : 1;
-        button.classList.toggle("active");
-
-        if (window.progressBars[userId]) {
-          window.progressBars[userId].done += countChange;
-          window.progressBars[userId].updateProgress(countChange === 1);
+  // Updates app state from the backend
+  async getStateFromBackend() {
+    return fetch("/api/state")
+      .then((response) => response.json())
+      .then((result) => {
+        if (!result.success) {
+          console.warn("Failed to fetch state:", result.error);
+          showError("Failed to fetch state: " + result.error);
+          return null;
         }
+        return result.data;
+      })
+      .catch((error) => {
+        console.error("Error fetching state:", error);
+        return null;
+      });
+  }
 
-        if (countChange === 1) {
-          // Show confetti based on user
-          if (userId === "milou") {
-            sideConfetti("left");
-          } else if (userId === "luca") {
-            sideConfetti("right");
-          } else {
-            sideConfetti("both");
+  // General Runtime state management methods
+  // --------------------------------------------------------------
+
+
+  getState() {
+    // return the app state
+    return JSON.parse(JSON.stringify(this.state));
+  }
+
+  async setState(newState, isUndo=false) {
+    // sets new app state and saves it through the backend API
+    // isUndo indicates if this is an undo operation
+
+    
+    return fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newState),
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+        return true;
+      })
+      .catch((error) => {
+        console.error("Error saving state:", error);
+        throw error;
+      })
+      .then(() => {
+        this.state = newState;
+        if (!isUndo) {
+          // Store previous state for undo functionality
+          this.previousStates.push(this.getState());
+          this.buttonUndo.disabled = false;
+          if (this.previousStates.length > 3) {
+            this.previousStates.shift(); // Keep only last 3 states
           }
         }
-        storeState();
       });
-    });
-  });
-
-  taskButtonsGeneral.forEach((button) => {
-    button.addEventListener("click", () => {
-      const isActive = button.classList.toggle("active");
-      button.innerText = isActive ? " 🎉 " : "...";
-      if (isActive) {
-        // Big celebration for general tasks
-        sideConfetti("both");
-      }
-      storeState();
-    });
-  });
-
-  buttonReset.addEventListener("click", async () => {
-    await storeState(true);
-    await updateApp();
-  });
-}
-
-async function storeState(reset = false) {
-  // store state of the buttons to backend API
-  // if reset=true stored false for all states in order to reset the app
-  let stateData = {};
-
-  if (reset) {
-    // use the reset api
-    try {
-      const response = await fetch("/api/reset", {
-        method: "POST",
-        });
-      const result = await response.json();
-      if (!result.success) {
-        console.error("Failed to reset state:", result.error);
-      }
-    } catch (error) {
-      console.error("Error resetting state:", error);
-    }
-  } else {
-    // gather current state from buttons and use the save api
-    const isActive = (x) => x.classList.contains("active");
-
-    // Store state for each user
-    for (const userId of Object.keys(currentConfig.users)) {
-      const userButtons = document.querySelectorAll(`.btn-${userId}`);
-      stateData[userId] = [...userButtons].map(isActive);
-    }
-
-    // Store state for general tasks
-    const generalButtons = document.querySelectorAll(".general-task");
-    stateData.general = [...generalButtons].map(isActive);
-
-    try {
-      const response = await fetch("/api/state", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(stateData),
-      });
-
-      const result = await response.json();
-      if (!result.success) {
-        console.error("Failed to save state:", result.error);
-      }
-      console.log("State stored successfully:", stateData);
-    } catch (error) {
-      console.error("Error storing state:", error);
-    }
   }
-}
 
-async function updateApp() {
-  // synchronize button status with task state from backend API
-  let storedButtonStates = {};
-  try {
-    const response = await fetch("/api/state");
-    const result = await response.json();
-    storedButtonStates = result.data;
+  updateWidgets() {
+    // Update all widgets from app state
 
-    if (!result.success) {
-      console.error("Unsuccessful in loading /api/state:", result.error);
+    if (!this.state) {
+      console.log("updateWidgets -> No application state set for update");
       return;
     }
+    this.widgets.forEach((widget) => widget.updateFromAppState());
   }
-  catch (error) {
-    console.error("Error loading state:", error);
-    for (const userId of Object.keys(currentConfig.users)) {
-      if (window.progressBars && window.progressBars[userId]) {
-        window.progressBars[userId].done = 0;
-        window.progressBars[userId].updateProgress();
-      }
-    }
-    return;
+
+  async setStateAndUpdateWidgets(state, isUndo=false) {
+    // set new state and update all widgets
+    return this.setState(state, isUndo).then(() => this.updateWidgets());
   }
   
-  console.log("updateApp - state loaded:", storedButtonStates);
+  // Specific operations
+  // --------------------------------------------------------------
 
-  function applyStateToButtonList(buttonNodes, isActiveArray) {
-    // sets buttons to active based on state data
-    isActiveArray.forEach((value, index) => {
-      if (buttonNodes[index]) {
-        value
-          ? buttonNodes[index].classList.add("active")
-          : buttonNodes[index].classList.remove("active");
-      }
-    });
+  async resetState() {
+    // reset state, this is both persisted via the backend API and
+    // updated in the app state itself
+    return fetch("/api/reset", {
+      method: "POST",
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        if (!result.success) {
+          console.warning("Failed to reset state:", result.error);
+          showError("Failed to reset state: " + result.error);
+          throw new Error(result.error);
+        }
+        else {
+          return this.setState(result.data)
+            .then(() => true);
+        }
+      })
+      .catch((error) => {
+        console.error("Error resetting state:", error);
+        throw error;
+      });
   }
 
-  // Apply state for each user
-  for (const userId of Object.keys(currentConfig.users)) {
-    if (storedButtonStates[userId]) {
-      const userButtons = document.querySelectorAll(`.btn-${userId}`);
-      applyStateToButtonList(userButtons, storedButtonStates[userId]);
-
-      // Update progress bars
-      if (window.progressBars && window.progressBars[userId]) {
-        window.progressBars[userId].done = storedButtonStates[userId].filter(
-          (x) => x
-        ).length;
-        window.progressBars[userId].updateProgress();
-      }
+  async undoLastChange() {
+    if (this.previousStates.length <= 1) {
+      showWarning("No previous state to undo to.", "Undo");
+      return;
     }
-  }
+    this.previousStates.pop();
+    const lastState = this.previousStates[this.previousStates.length - 1];
 
-  if (storedButtonStates.general) {
-    const generalButtons = document.querySelectorAll(".general-task");
-    // Apply state for general tasks
-    applyStateToButtonList(generalButtons, storedButtonStates.general);
-    // Update general button text
-    generalButtons.forEach((button) => {
-      button.innerText = button.classList.contains("active") ? " 🎉 " : "...";
-    });
+    await this.setState(lastState, true);
+    await this.updateWidgets();
+    this.buttonUndo.disabled = this.previousStates.length <= 1;
   }
-
 }
+
+  // Handle end of week functionality
+async function handleEndWeek() {
+  try {
+    // Here you can implement week ending logic like:
+    // - Save current week's progress
+    // - Archive completed tasks
+    // - Generate weekly report
+    // - Reset for new week
+    showSuccess("Week ended successfully! Progress saved.", "End of Week");
+
+    // For now, just show a success message
+    // You can expand this functionality later
+  } catch (error) {
+    console.error("Error ending week:", error);
+    showError("Failed to end week. Please try again.", "Error");
+  }
+}
+
+
 
 // Confetti utility functions
 function createConfetti(options = {}) {
@@ -421,5 +427,67 @@ update all from reset button -> set all buttons and update both progress bars se
 update all from data load -> set all buttons and update both progress bars separately
 */
 
+// Toast notification utilities
+function showToast(message, type = "info", title = null, duration = 5000) {
+  const toast = document.getElementById("notification-toast");
+  const toastIcon = document.getElementById("toast-icon");
+  const toastTitle = document.getElementById("toast-title");
+  const toastMessage = document.getElementById("toast-message");
+
+  // Configure based on type
+  const configs = {
+    success: {
+      icon: "fa-check-circle",
+      color: "text-success",
+      title: "Success",
+    },
+    error: {
+      icon: "fa-exclamation-circle",
+      color: "text-danger",
+      title: "Error",
+    },
+    warning: {
+      icon: "fa-exclamation-triangle",
+      color: "text-warning",
+      title: "Warning",
+    },
+    info: { icon: "fa-info-circle", color: "text-info", title: "Info" },
+  };
+
+  const config = configs[type] || configs.info;
+
+  // Update toast content
+  toastIcon.className = `fas ${config.icon} ${config.color} me-2`;
+  toastTitle.textContent = title || config.title;
+  toastMessage.textContent = message;
+
+  // Show toast
+  const bsToast = new bootstrap.Toast(toast, {
+    delay: duration,
+  });
+  bsToast.show();
+}
+
+// Convenience functions
+function showSuccess(message, title = null) {
+  showToast(message, "success", title);
+}
+
+function showError(message, title = null) {
+  showToast(message, "error", title);
+}
+
+function showWarning(message, title = null) {
+  showToast(message, "warning", title);
+}
+
+
+function showInfo(message, title = null) {
+  showToast(message, "info", title);
+}
+
 // Initialize the application
-initializeApp();
+const app = new App();
+await app.init();
+
+window.globalThis.app = app; // expose app for debugging purposes

@@ -1,22 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-    crossorigin="anonymous"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
     <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
-  <link rel="stylesheet" href="style.css" />
-  <title>Household</title>
-</head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <title>Household</title>
+  </head>
 
-<body>
-  <div class="container-md">
-    <h2 class="text-center">Huistaakjes</h1>
+  <body>
+    <div class="container">
+      <h2 class="text-center">Huistaakjes</h2>
+      <p class="d-none d-lg-block text-center">
+        houd je huistaakjes en zakgeld bij
+      </p>
+
+      <!-- Pills navs -->
+      <div class="col-8 col-md mb-5 mx-auto">
+        <ul class="nav nav-pills mb-3" id="ex1" role="tablist">
+          <li
+            class="nav-item border-1 rounded-1 border-info me-3"
+            role="presentation"
+          >
+            <a
+              data-mdb-pill-init
+              class="nav-link active"
+              id="ex1-tab-1"
+              href="#ex1-pills-1"
+              role="tab"
+              aria-controls="ex1-pills-1"
+              aria-selected="true"
+              >📋 Taakjes</a
+            >
+          </li>
+          <li
+            class="nav-item bg-light border border-dark-subtle rounded-2 me-3"
+            role="presentation"
+          >
+            <a
+              data-mdb-pill-init
+              class="nav-link"
+              id="ex1-tab-2"
+              href="#ex1-pills-2"
+              role="tab"
+              aria-controls="ex1-pills-2"
+              aria-selected="false"
+              >🪙 Zakgeld</a
+            >
+          </li>
+          <li
+            class="nav-item bg-light border border-dark-subtle rounded-2 me-3"
+            role="presentation"
+          >
+            <a
+              data-mdb-pill-init
+              class="nav-link"
+              id="ex1-tab-3"
+              href="#ex1-pills-3"
+              role="tab"
+              aria-controls="ex1-pills-3"
+              aria-selected="false"
+              >⚙️ Instellingen</a
+            >
+          </li>
+        </ul>
+      </div>
+      <!-- Pills navs -->
+
+      <!-- Pills content -->
+      <div class="tab-content" id="ex1-content">
+        <div
+          class="tab-pane fade show active"
+          id="ex1-pills-1"
+          role="tabpanel"
+          aria-labelledby="ex1-tab-1"
+        >
+          <div class="tab-pane fade show active" id="ex1-pills-1">
+            <!-- Pane-specific toolbar -->
+            <div
+              class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded"
+            >
+              <h5 class="mb-0">Weekly Tasks</h5>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-warning" id="reset-tasks">
+                  <i class="fas fa-undo me-1"></i>Reset
+                </button>
+                <button class="btn btn-outline-success" id="end-week-tasks">
+                  <i class="fas fa-calendar-check me-1"></i>Einde Week
+                </button>
+                <button class="btn btn-outline-primary" id="undo-tasks" disabled>
+                  <i class="fas fa-undo me-1"></i>Ongedaan maken
+                </button>
+              </div>
+            </div>
+            <!-- Your existing content -->
+          </div>
+          <div class="row justify-content-center">
+            <div class="col-md-8 col-lg mb-2 mx-2">
+              <div class="card shadow">
+                <div class="user-card card-body" data-user="Luca">
+                  <h3
+                    class="user-card__title card-title text-dark d-flex align-items-center"
+                  >
+                    Luca
+                  </h3>
+                  <div class="d-flex align-items-center gap-2 text-muted mt-2">
+                    <i class="fas fa-bullseye me-1" aria-hidden="true"></i>
+                    <span class="user-card__chore-count">0 / 7 taakjes</span>
+                  </div>
+                  <div class="mt-3">
+                    <div class="progress mb-2" style="height: 12px">
+                      <div
+                        class="progress-bar user-card__progress"
+                        style="width: 0%"
+                      ></div>
+                    </div>
+                    <p class="small text-muted mt-2 user-card__remaining">
+                      nog 7 te gaan
+                    </p>
+                  </div>
+                  <div class="mt-3">
+                    <div class="d-flex gap-2 mb-3">
+                      <input
+                        class="form-control form-control-sm flex-fill user-card__new-chore-input"
+                        placeholder="Add a chore..."
+                        value=""
+                      />
+                      <button
+                        class="btn btn-primary btn-sm flex-shrink-0 user-card__new-chore-button"
+                      >
+                        <i class="fas fa-plus" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                    <div
+                      class="chore-list"
+                      style="max-height: 300px; overflow-y: auto"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-8 col-lg mx-2">
+              <div class="card shadow">
+                <div class="user-card card-body" data-user="Milou">
+                  <h3 class="user-card__title card-title text-dark">Milou</h3>
+                  <div class="d-flex align-items-center gap-2 text-muted mt-2">
+                    <i class="fas fa-bullseye me-1" aria-hidden="true"></i>
+                    <span class="user-card__chore-count">0 / 7 taakjes</span>
+                  </div>
+                  <div class="mt-3">
+                    <div class="progress mb-2" style="height: 12px">
+                      <div
+                        class="user-card__progress progress-bar"
+                        style="width: 0%"
+                      ></div>
+                    </div>
+                    <p class="user-card__remaining small text-muted mt-2">
+                      nog 7 te gaan
+                    </p>
+                  </div>
+                  <div class="mt-3">
+                    <div class="d-flex gap-2 mb-3">
+                      <input
+                        class="form-control form-control-sm flex-fill user-card__new-chore-input"
+                        placeholder="Add a chore..."
+                        value=""
+                      /><button
+                        class="btn btn-primary btn-sm flex-shrink-0 user-card__new-chore-button"
+                      >
+                        <i class="fas fa-plus" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                    <div
+                      class="chore-list"
+                      style="max-height: 300px; overflow-y: auto"
+                    >
+                      <p class="small text-muted text-center py-4">
+                        No chores yet this week
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="tab-pane fade"
+          id="ex1-pills-2"
+          role="tabpanel"
+          aria-labelledby="ex1-tab-2"
+        >
+          Tab 2 content
+        </div>
+        <div
+          class="tab-pane fade"
+          id="ex1-pills-3"
+          role="tabpanel"
+          aria-labelledby="ex1-tab-3"
+        >
+          Tab 3 content
+        </div>
+      </div>
+      <!-- Pills content -->
+      <!-- Tabs content -->
+      <!-- old progress bars
     <div class="progressholders d-flex flex-column my-3 p-2 border border-1 rounded-1 border-info">
       <p class="mb-0">Luca</p>
       <div class="progress mb-2">
@@ -33,120 +236,54 @@
         </div>
       </div>
     </div>
-    <div class="overflow-x-auto">
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th scope="col">Taak</th>
-          <th scope="col">Zondag</th>
-          <th scope="col">Maandag</th>
-          <th scope="col">Dinsdag</th>
-          <th scope="col">Woensdag</th>
-          <th scope="col">Donderdag</th>
-          <th scope="col">Vrijdag</th>
-          <th scope="col">Zaterdag</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="">
-          <td scope="row">template</td>
-          <td class="d-flex">
-            <div class="w-50">
-              <button class="btn btn-outline-primary btn-milou" aria-pressed="false" autocomplete="off">Milou</button>
-            </div>
-            <div class="w-50">
-              <button class="btn btn-outline-primary btn-luca" aria-pressed="false" autocomplete="off">Luca</button>
-            </div>
-          </td>
-          <td>
-            <div class="d-flex">
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-milou" aria-pressed="false" autocomplete="off">Milou</button>
-              </div>
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-luca" aria-pressed="false" autocomplete="off">Luca</button>
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="d-flex">
-              <div class="w-100">
-                <button class="btn btn-outline-primary btn-milou" aria-pressed="false" autocomplete="off">Milou</button>
-              </div>
-              <div class="w-100">
-                <button class="btn btn-outline-primary btn-luca" aria-pressed="false" autocomplete="off">Luca</button>
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="d-flex">
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-milou" aria-pressed="false" autocomplete="off">Milou</button>
-              </div>
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-luca" aria-pressed="false" autocomplete="off">Luca</button>
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="d-flex">
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-milou" aria-pressed="false" autocomplete="off">Milou</button>
-              </div>
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-luca" aria-pressed="false" autocomplete="off">Luca</button>
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="d-flex">
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-milou" aria-pressed="false" autocomplete="off">Milou</button>
-              </div>
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-luca" aria-pressed="false" autocomplete="off">Luca</button>
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="d-flex">
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-milou" aria-pressed="false" autocomplete="off">Milou</button>
-              </div>
-              <div class="w-50">
-                <button class="btn btn-outline-primary btn-luca" aria-pressed="false" autocomplete="off">Luca</button>
-              </div>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+     -->
+      <div class="main-buttons-control d-flex m-3">
+        <a role="button" class="btn btn-sm btn-secondary me-2" href="/config">
+          ⚙️<span class="visually-hidden">Settings</span>
+        </a>
+        <a role="button" class="btn btn-sm btn-light ms-2" href="/logout">👟</a>
+      </div>
+      <footer class="text-center text-muted small mt-4 mb-2">
+        <span id="app-version">Loading version...</span>
+      </footer>
     </div>
-    <div class="main-buttons-control d-flex m-3">
-      <a role="button" class="btn btn-sm btn-secondary me-2" href="/config">
-        ⚙️<span class="visually-hidden">Settings</span>
-      </a>
-      <button id="reset" class="btn btn-sm btn-danger">wissen</button>
-      <a role="button" class="btn btn-sm btn-light ms-2" href="/logout">👟</a>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+      <div
+        id="notification-toast"
+        class="toast"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        <div class="toast-header">
+          <i id="toast-icon" class="fas fa-info-circle text-info me-2"></i>
+          <strong id="toast-title" class="me-auto">Notification</strong>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="toast-body" id="toast-message">Default message</div>
+      </div>
     </div>
-    <footer class="text-center text-muted small mt-4 mb-2">
-      <span id="app-version">Loading version...</span>
-    </footer>
-
-  </div>
-  <script src="config.js"></script>
-  <script src="index.js"></script>
-  <script defer>
-    // Fetch and display version
-    fetch('/api/version')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('app-version').textContent = `version ${data.version}`;
-      })
-      .catch(() => {
-        document.getElementById('app-version').textContent = '';
-      });
-  </script>
-</body>
-
+    <script src="config.js"></script>
+    <script type="module" src="index.js"></script>
+    <script defer>
+      // Fetch and display version
+      fetch("/api/version")
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById(
+            "app-version"
+          ).textContent = `version ${data.version}`;
+        })
+        .catch(() => {
+          document.getElementById("app-version").textContent = "";
+        });
+    </script>
+  </body>
 </html>

@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize storage managers using factory method
-config_store, state_store = create_storage_managers(user_id="household")
+config_store, state_store = create_storage_managers(user_id="household2")
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv('SECRET')
@@ -70,7 +70,7 @@ def load_user(user_id):
     return None
 
 # Configuration
-STATE_FILE = os.getenv('STATE_FILE', 'household_state.json')
+STATE_FILE = os.getenv('STATE_FILE', 'household_state_v2.json')
 PORT = int(os.getenv('PORT', 8080))
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 APP_VERSION = os.getenv('APP_VERSION', 'dev')
@@ -219,7 +219,7 @@ def update_state():
             }), 400
         
         # Validate state structure
-        required_keys = ['milou', 'luca', 'general']
+        required_keys = ['Milou', 'Luca']
         if not all(key in new_state for key in required_keys):
             return jsonify({
                 'success': False,
