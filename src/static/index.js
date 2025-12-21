@@ -41,6 +41,8 @@ class ChoreManager {
 
   #handlerAddChore() {
     // event handler for adding a new chore
+    // creates a new chore from the input elements
+    // updates the app state through the app reference
     const choreName = this.elements.nameInput.value.trim();
     if (!choreName) {
       return; // ignore empty input
@@ -49,27 +51,15 @@ class ChoreManager {
 
     // Add chore and save through app
     this.currentChores.push(new Chore(choreName));
-    this.#saveState();
-    this.update();
+
+    state = this.app.getState();
+    state[this.user].choreList = this.currentChores.map((chore) => ({
+      name: chore.name,
+      date: chore.date.toISOString(),
+    }));
+    this.app.setState(state);
 
     this.elements.nameInput.value = ""; // clear input
-  }
-
-  async #saveState() {
-    // Save current state through app's simple API
-    try {
-      const currentState = await this.app.getState();
-      if (currentState && currentState[this.user]) {
-        currentState[this.user].choreList = this.currentChores.map((chore) => ({
-          name: chore.name,
-          date: chore.date.toISOString(),
-        }));
-        await this.app.saveState(currentState);
-      }
-    } catch (error) {
-      console.error(`Failed to save state for ${this.user}:`, error);
-      showError(`Failed to save chore for ${this.user}`);
-    }
   }
 
   setState(userData) {
@@ -80,8 +70,10 @@ class ChoreManager {
     this.choresTarget = userData.config.tasksPerWeek;
   }
 
-  async updateFromAppState(stateData) {
+  async updateStateFromApp() {
     // updates the widget state from the general app state
+
+    const stateData = this.app.getState();
     if (stateData && stateData[this.user]) {
       this.setState(stateData[this.user]);
       this.update();
@@ -90,8 +82,8 @@ class ChoreManager {
     }
   }
 
-  async update() {
-    // assuming that we can use the currentConfig to get user info
+  async updateWidget() {
+    // assuming that we can rely on the widget state 
 
     this.count = this.currentChores.length;
 
@@ -190,14 +182,30 @@ const defaultComplimentjes = [
 class App {
   constructor() {
     this.previousStates = [];  // stores the last 3 previous states for undo operations
+    this.state = null; // current application state
     this.#setupChoreManagers();
     // this.#generateTaskTable();
     this.#setupEventListeners();
-    this.update();
-    this.getState()
-      .then((state) => {
-        if (state) this.previousStates.push(state);
+
+  }
+
+  // Constructor related methods
+  // --------------------------------------------------------------
+
+  async init() {
+    // any async initialization can go here
+    this.getStateFromBackend()
+    .then((state) => {
+      if (state) {
+        this.state = state;
+        this.previousStates.push(state);
+      }
+    })
+    .catch((error) => {
+      console.error("Error initializing app state:", error);
+      showError("Failed to initialize application state");
     });
+    this.updateWidgets();
   }
 
   // Constructor and initialization methods
@@ -211,36 +219,102 @@ class App {
 
   #setupEventListeners() {
     // event for reset button
-  const buttonReset = document.getElementById("reset-tasks");
-  const buttonEndWeek = document.getElementById("end-week-tasks");
-  this.buttonUndo = document.getElementById("undo-tasks");
+    const buttonReset = document.getElementById("reset-tasks");
+    const buttonEndWeek = document.getElementById("end-week-tasks");
+    this.buttonUndo = document.getElementById("undo-tasks");
 
-  buttonReset.addEventListener("click", async () => {
-    await this.resetState();
-    await this.update();
-  });
+    buttonReset.addEventListener("click", async () => {
+      await this.resetState();
+      await this.update();
+    });
 
-  buttonEndWeek.addEventListener("click", async () => {
-    await handleEndWeek();
-  });
+    buttonEndWeek.addEventListener("click", async () => {
+      await handleEndWeek();
+    });
 
-  this.buttonUndo.addEventListener("click", () => {
-    this.undoLastChange();
-  });
+    this.buttonUndo.addEventListener("click", () => {
+      this.undoLastChange();
+    });
   }
 
-  // Simple state management methods
-  async getState() {
+  // Updates app state from the backend
+  async getStateFromBackend() {
     return fetch("/api/state")
       .then((response) => response.json())
       .then((result) => {
-        return result.data;
+        if (!result.success) {
+          console.warning("Failed to fetch state:", result.error);
+          showError("Failed to fetch state: " + result.error);
+          return null;
+        }
+        this.state = result.data;
       })
       .catch((error) => {
         console.error("Error fetching state:", error);
         return null;
       });
   }
+
+  // General Runtime state management methods
+  // --------------------------------------------------------------
+
+
+  getState() {
+    // return the app state
+    return JSON.parse(JSON.stringify(this.state));
+  }
+
+  async setState(newState, isUndo=false) {
+    // sets new app state and saves it through the backend API
+    // isUndo indicates if this is an undo operation
+
+    
+    return fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newState),
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+        return true;
+      })
+      .catch((error) => {
+        console.error("Error saving state:", error);
+        throw error;
+      })
+      .then(() => {
+        this.state = newState;
+        if (!isUndo) {
+          // Store previous state for undo functionality
+          this.previousStates.push(this.state);
+          this.buttonUndo.disabled = false;
+          if (this.previousStates.length > 3) {
+            this.previousStates.shift(); // Keep only last 3 states
+          }
+        }
+      });
+  }
+
+  updateWidgets() {
+    // Update all widgets from app state
+
+    if (!this.state) {
+      console.log("updateWidgets -> No application state set for update");
+      return;
+    }
+    this.widgets.forEach((widget) => widget.updateFromAppState(this.state));
+  }
+
+  async setStateAndUpdateWidgets(state, isUndo=false) {
+    // set new state and update all widgets
+    return this.setState(state, isUndo).then(() => this.updateWidgets());
+  }
+  
+  // Specific operations
+  // --------------------------------------------------------------
 
   async resetState() {
     // reset state through backend API
@@ -277,56 +351,13 @@ class App {
     await this.update();
     this.buttonUndo.disabled = this.previousStates.length <= 1;
   }
-
-  async saveState(state, isUndo=false) {
-    // save state through backend API
-    return fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(state),
-    })
-      .then((response) => response.json())
-      .then((result) => {
-        if (!result.success) {
-          throw new Error(result.error);
-        }
-        return true;
-      })
-      .catch((error) => {
-        console.error("Error saving state:", error);
-        throw error;
-      })
-      .then(() => {
-        if (!isUndo) {
-          // Store previous state for undo functionality
-          this.previousStates.push(state);
-          this.buttonUndo.disabled = false;
-          if (this.previousStates.length > 3) {
-            this.previousStates.shift(); // Keep only last 3 states
-          }
-        }
-      });
-  }
-
-
-
-  async update() {
-    // Update all widgets
-
-    try {
-      const data = await this.getState();
-      if (data) {
-        console.log("App update - loaded state:", data);
-        this.widgets.forEach((widget) => widget.updateFromAppState(data));
-      }
-    } catch (error) {
-      console.error("Error fetching state for update:", error);
-      showError("Failed to update application state");
-    }
-  }
 }
 
-// Handle end of week functionality
+  
+
+
+
+  // Handle end of week functionality
 async function handleEndWeek() {
   try {
     // Here you can implement week ending logic like:
@@ -484,5 +515,6 @@ function showInfo(message, title = null) {
 
 // Initialize the application
 const app = new App();
+app.init();
 
 window.globalThis.app = app; // expose app for debugging purposes
