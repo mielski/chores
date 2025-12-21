@@ -49,7 +49,7 @@ class ChoreManager {
     this.currentChores.push({name: choreName, date: choreDateString});
 
     const state = this.app.getState();
-    state[this.user].choreList = this.currentChores
+    state[this.user].choreList = [...this.currentChores];
     this.app.setState(state);
 
     this.elements.nameInput.value = ""; // clear input
