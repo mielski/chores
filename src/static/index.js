@@ -360,10 +360,6 @@ class App {
   }
 }
 
-  
-
-
-
   // Handle end of week functionality
 async function handleEndWeek() {
   try {
