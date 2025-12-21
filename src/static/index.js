@@ -52,7 +52,7 @@ class ChoreManager {
     // Add chore and save through app
     this.currentChores.push(new Chore(choreName));
 
-    state = this.app.getState();
+    const state = this.app.getState();
     state[this.user].choreList = this.currentChores.map((chore) => ({
       name: chore.name,
       date: chore.date.toISOString(),
@@ -60,6 +60,7 @@ class ChoreManager {
     this.app.setState(state);
 
     this.elements.nameInput.value = ""; // clear input
+    this.updateWidget();
   }
 
   setState(userData) {
@@ -70,13 +71,12 @@ class ChoreManager {
     this.choresTarget = userData.config.tasksPerWeek;
   }
 
-  async updateStateFromApp() {
+  async updateFromAppState() {
     // updates the widget state from the general app state
-
     const stateData = this.app.getState();
     if (stateData && stateData[this.user]) {
       this.setState(stateData[this.user]);
-      this.update();
+      this.updateWidget();
     } else {
       console.warn(`No state data found for user ${this.user}`);
     }
@@ -194,18 +194,19 @@ class App {
 
   async init() {
     // any async initialization can go here
-    this.getStateFromBackend()
+    return this.getStateFromBackend()
     .then((state) => {
       if (state) {
         this.state = state;
         this.previousStates.push(state);
+        this.updateWidgets();
       }
     })
     .catch((error) => {
       console.error("Error initializing app state:", error);
       showError("Failed to initialize application state");
     });
-    this.updateWidgets();
+    
   }
 
   // Constructor and initialization methods
@@ -224,8 +225,13 @@ class App {
     this.buttonUndo = document.getElementById("undo-tasks");
 
     buttonReset.addEventListener("click", async () => {
+      console.log('clicked button reset');
+      
       await this.resetState();
-      await this.update();
+      console.log('state reset, updating widgets');
+      console.log(this.state);
+      
+      this.updateWidgets();
     });
 
     buttonEndWeek.addEventListener("click", async () => {
@@ -247,7 +253,7 @@ class App {
           showError("Failed to fetch state: " + result.error);
           return null;
         }
-        this.state = result.data;
+        return result.data;
       })
       .catch((error) => {
         console.error("Error fetching state:", error);
@@ -305,7 +311,7 @@ class App {
       console.log("updateWidgets -> No application state set for update");
       return;
     }
-    this.widgets.forEach((widget) => widget.updateFromAppState(this.state));
+    this.widgets.forEach((widget) => widget.updateFromAppState());
   }
 
   async setStateAndUpdateWidgets(state, isUndo=false) {
@@ -317,7 +323,8 @@ class App {
   // --------------------------------------------------------------
 
   async resetState() {
-    // reset state through backend API
+    // reset state, this is both persisted via the backend API and
+    // updated in the app state itself
     return fetch("/api/reset", {
       method: "POST",
     })
@@ -329,8 +336,8 @@ class App {
           throw new Error(result.error);
         }
         else {
-          this.saveState(result.data);
-          return true
+          return this.setState(result.data)
+            .then(() => true);
         }
       })
       .catch((error) => {
@@ -347,8 +354,8 @@ class App {
     this.previousStates.pop();
     const lastState = this.previousStates[this.previousStates.length - 1];
 
-    await this.saveState(lastState, true);
-    await this.update();
+    await this.setState(lastState, true);
+    await this.updateWidgets();
     this.buttonUndo.disabled = this.previousStates.length <= 1;
   }
 }
@@ -515,6 +522,6 @@ function showInfo(message, title = null) {
 
 // Initialize the application
 const app = new App();
-app.init();
+await app.init();
 
 window.globalThis.app = app; // expose app for debugging purposes
