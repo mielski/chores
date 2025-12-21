@@ -1,11 +1,6 @@
 // project configuration constants
 "use strict";
 
-function Chore(name, date = new Date()) {
-  this.name = name;
-  this.date = date;
-}
-
 class ChoreManager {
   constructor(cardElement, app) {
     this.card = cardElement; // card element is the container for the task information of this user
@@ -44,19 +39,17 @@ class ChoreManager {
     // creates a new chore from the input elements
     // updates the app state through the app reference
     const choreName = this.elements.nameInput.value.trim();
+    const choreDateString = new Date().toISOString().slice(0, 10); // current date in ISO format
     if (!choreName) {
       return; // ignore empty input
     }
     console.log(`${this.user} selected ${choreName}`);
 
     // Add chore and save through app
-    this.currentChores.push(new Chore(choreName));
+    this.currentChores.push({name: choreName, date: choreDateString});
 
     const state = this.app.getState();
-    state[this.user].choreList = this.currentChores.map((chore) => ({
-      name: chore.name,
-      date: chore.date.toISOString(),
-    }));
+    state[this.user].choreList = this.currentChores
     this.app.setState(state);
 
     this.elements.nameInput.value = ""; // clear input
@@ -65,9 +58,7 @@ class ChoreManager {
 
   setState(userData) {
     // set the state of the chore manager from data
-    this.currentChores = userData.choreList.map(
-      ({ name, date }) => new Chore(name, new Date(date))
-    );
+    this.currentChores = [...userData.choreList] || [];
     this.choresTarget = userData.config.tasksPerWeek;
   }
 
@@ -124,16 +115,11 @@ class ChoreManager {
 
           const choreDate = new Date(chore.date);
           const today = new Date();
-          const isToday =
-            choreDate.getDate() === today.getDate() &&
-            choreDate.getMonth() === today.getMonth() &&
-            choreDate.getFullYear() === today.getFullYear();
+          const isToday = choreDate.getTime() + 3600_000 * 24 > today.valueOf()
           const isYesterday =
-            choreDate.getDate() === today.getDate() - 1 &&
-            choreDate.getMonth() === today.getMonth() &&
-            choreDate.getFullYear() === today.getFullYear();
+            choreDate.getTime() + 3600_000 * 48 > today.valueOf() && !isToday;
 
-          let displayDate = new Date(chore.date).toLocaleDateString(
+          let displayDate = choreDate.toLocaleDateString(
             window.navigator.language,
             {
               day: "numeric",
@@ -150,7 +136,7 @@ class ChoreManager {
           choreElement.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
             <span class="task__title fw-medium">${chore.name}</span>
-            <small class="task__date"><time datetime="${chore.date.toISOString()}">${displayDate}</time></small>
+            <small class="task__date"><time datetime="${chore.date}">${displayDate}</time></small>
           </div>
         `;
           this.elements.list.appendChild(choreElement);
@@ -162,22 +148,6 @@ class ChoreManager {
     }
   }
 }
-
-// Default fallback values
-const defaultComplimentjes = [
-  "lekker bezig! 🚀",
-  "ga zo door! 🌟",
-  "held! 💪",
-  "knapperd! 😎",
-  "je hebt jezelf overtroffen! 🎉",
-  "je bent een topper! ⭐",
-  "fantastisch werk! 👏",
-  "je maakt het verschil! 🌈",
-  "je rockt! 🎸",
-  "briljant gedaan! 💡",
-  "superster! 🌟",
-  "gewoon geweldig! 🏆",
-];
 
 class App {
   constructor() {
