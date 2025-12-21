@@ -249,7 +249,7 @@ class App {
       .then((response) => response.json())
       .then((result) => {
         if (!result.success) {
-          console.warning("Failed to fetch state:", result.error);
+          console.warn("Failed to fetch state:", result.error);
           showError("Failed to fetch state: " + result.error);
           return null;
         }
@@ -347,7 +347,7 @@ class App {
   }
 
   async undoLastChange() {
-        if (this.previousStates.length <= 1) {
+    if (this.previousStates.length <= 1) {
       showWarning("No previous state to undo to.", "Undo");
       return;
     }

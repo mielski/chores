@@ -51,9 +51,9 @@ The application consists of:
    - Click the ⚙️ (settings) button to configure tasks and users
    - The app will be accessible from any device on your local network using your computer's IP address
 
-4 **Optionally, use cosmos db emulator**
+4. **Optionally, use cosmos db emulator**
 
-   - Download and install the Cosmos DB emulator from https://learn.microsoft.com/en-us/azure/cosmos-db/ local-emulator
+   - Download and install the Cosmos DB emulator from https://learn.microsoft.com/en-us/azure/cosmos-db/local-emulator
    - Start the emulator and ensure it's running
    - Update your `.env` file with the following settings:
    
