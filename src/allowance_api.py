@@ -10,6 +10,7 @@ Expected repository interface (see storage_factory.AllowanceRepositoryProtocol):
 - get_recent_transactions(user_id: str, limit: int = 20) -> list[dict]
 - add_transaction(user_id: str, amount: float, tx_type: str, description: str | None = None) -> tuple[dict, dict]
 - update_settings(user_id: str, new_settings: dict) -> dict
+- remove_last_transaction(user_id: str) -> dict
 
 Suggested wiring pattern in app setup:
 
@@ -26,15 +27,18 @@ Inside the route handlers below you can retrieve the repository with:
 
 and then call the methods listed above.
 """
+import logging
 
 from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required
+
+from storage_factory import AllowanceRepositoryProtocol
 
 
 allowance_bp = Blueprint("allowance", __name__, url_prefix="/api/allowance")
 
 
-def _get_repo():
+def _get_repo() -> AllowanceRepositoryProtocol:
     """Helper to fetch the allowance repository from app config.
 
     You can change this if you prefer a different injection pattern.
@@ -54,13 +58,30 @@ def get_allowance_account(user_id: str):
     Expected JSON response shape on success:
         {"success": True, "data": { ... account document ... }}
 
-    TODO: implement using repo.get_account(user_id).
+    Error responses:
+        403: {"success": False, "error": "not found"}
+        500: {"success": False, "error": "A system error occured"}
     """
-    # TODO: replace this stub implementation
-    return jsonify({
-        "success": False,
-        "error": "Not implemented yet: GET /api/allowance/<user_id>/account",
-    }), 501
+    try:
+        repo = _get_repo()
+        account = repo.get_account(user_id=user_id)
+        if account:
+            return jsonify({
+                "success": True,
+                "data": account,
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "error": "not found"
+            }), 404
+    except Exception as e:
+        logging.exception("Error fetching allowance account", exc_info=e)
+        return jsonify({
+            "success": False,
+            "error": "A system error occured",
+        }), 500
+
 
 
 @allowance_bp.route("/<user_id>/transactions", methods=["GET"])
