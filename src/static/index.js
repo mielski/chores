@@ -102,7 +102,7 @@ class ChoreManager {
     // update the chore list
     if (this.count === 0) {
       this.elements.list.innerHTML = `<p class="small text-muted text-center py-4">
-        No chores yet this week
+        Nog geen taakjes deze wek
       </p>`;
     } else {
       this.elements.list.innerHTML = "";
