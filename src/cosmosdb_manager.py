@@ -6,7 +6,9 @@ persistence, backups, and no risk of data loss on container restarts.
 """
 import os
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
+from datetime import datetime, timezone
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,12 @@ class CosmosDBManager:
         
         self.state_container = self.database.create_container_if_not_exists(
             id="task-states",
+            partition_key=PartitionKey(path="/userId")
+        )
+
+        # Container for allowance accounts and transactions
+        self.allowance_container = self.database.create_container_if_not_exists(
+            id="allowance-ledger",
             partition_key=PartitionKey(path="/userId")
         )
         
@@ -238,3 +246,202 @@ def create_cosmos_stores(user_id: str = "default"):
     state_store = CosmosStateStore(cosmos_manager, user_id)
     
     return config_store, state_store
+
+
+class CosmosAllowanceRepository:
+    """Allowance repository implementation backed by Azure Cosmos DB.
+
+    Stores one account document and multiple transaction documents per user,
+    all in the shared allowance-ledger container partitioned by userId.
+    """
+
+    def __init__(self, cosmos_manager: CosmosDBManager, ttl_days: Optional[int] = None):
+        self.cosmos = cosmos_manager
+        self.container = cosmos_manager.allowance_container
+        self.ttl_seconds: Optional[int] = None
+        if ttl_days is not None and ttl_days > 0:
+            self.ttl_seconds = int(ttl_days * 24 * 60 * 60)
+
+    def _default_account(self, user_id: str) -> Dict[str, Any]:
+        return {
+            "id": f"account#{user_id}",
+            "entityType": "account",
+            "userId": user_id,
+            "currentBalance": 0.0,
+            "currency": "EUR",
+            "settings": {
+                "weeklyAllowance": 0.0,
+                "autoPayDayOfWeek": 5,
+            },
+            "lastUpdated": None,
+            "version": 1,
+        }
+
+    def _get_or_create_account(self, user_id: str) -> Dict[str, Any]:
+        account_id = f"account#{user_id}"
+        try:
+            item = self.container.read_item(item=account_id, partition_key=user_id)
+            return item
+        except exceptions.CosmosResourceNotFoundError:
+            account = self._default_account(user_id)
+            self.container.upsert_item(account)
+            logger.info(f"Allowance account initialized in Cosmos DB for user {user_id}")
+            return account
+
+    def get_account(self, user_id: str) -> Dict[str, Any]:
+        """Return the allowance account document for a user."""
+        try:
+            return self._get_or_create_account(user_id)
+        except Exception as e:
+            logger.error(f"Error getting allowance account for {user_id} from Cosmos DB: {e}")
+            raise
+
+    def get_recent_transactions(self, user_id: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """Return the most recent transactions for a user, newest first."""
+        query = (
+            "SELECT TOP @limit * FROM c "
+            "WHERE c.entityType = 'transaction' AND c.userId = @userId "
+            "ORDER BY c.timestamp DESC"
+        )
+        params = [
+            {"name": "@limit", "value": int(limit)},
+            {"name": "@userId", "value": user_id},
+        ]
+
+        try:
+            items = list(
+                self.container.query_items(
+                    query=query,
+                    parameters=params,
+                    enable_cross_partition_query=False,
+                )
+            )
+            return items
+        except Exception as e:
+            logger.error(f"Error querying allowance transactions for {user_id} from Cosmos DB: {e}")
+            raise
+
+    def add_transaction(
+        self,
+        user_id: str,
+        amount: float,
+        tx_type: str,
+        description: Optional[str] = None,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Create a new transaction and update the account balance.
+
+        Note: For simplicity this uses sequential writes. For stricter
+        consistency you could migrate this to a transactional batch.
+        """
+
+        account = self._get_or_create_account(user_id)
+        old_balance = float(account.get("currentBalance", 0.0))
+        new_balance = old_balance + float(amount)
+
+        now = datetime.now(timezone.utc).isoformat()
+
+        tx_doc: Dict[str, Any] = {
+            "id": f"tx#{user_id}#{uuid.uuid4()}",
+            "entityType": "transaction",
+            "userId": user_id,
+            "timestamp": now,
+            "amount": float(amount),
+            "direction": "credit" if amount >= 0 else "debit",
+            "type": tx_type,
+            "description": description,
+            "balanceAfter": new_balance,
+        }
+
+        if self.ttl_seconds is not None:
+            tx_doc["ttl"] = self.ttl_seconds
+
+        try:
+            # Write transaction
+            self.container.upsert_item(tx_doc)
+
+            # Update account
+            account["currentBalance"] = new_balance
+            account["lastUpdated"] = now
+            account["version"] = int(account.get("version", 1)) + 1
+            self.container.upsert_item(account)
+
+            logger.info(f"Allowance transaction stored in Cosmos DB for {user_id}")
+            return account, tx_doc
+        except Exception as e:
+            logger.error(f"Error adding allowance transaction for {user_id} in Cosmos DB: {e}")
+            raise
+
+    def update_settings(self, user_id: str, new_settings: Dict[str, Any]) -> Dict[str, Any]:
+        """Update settings on the user's allowance account."""
+        account = self._get_or_create_account(user_id)
+        settings = account.setdefault("settings", {})
+        settings.update(new_settings)
+
+        now = datetime.now(timezone.utc).isoformat()
+        account["lastUpdated"] = now
+        account["version"] = int(account.get("version", 1)) + 1
+
+        try:
+            self.container.upsert_item(account)
+            logger.info(f"Allowance settings updated in Cosmos DB for {user_id}")
+            return account
+        except Exception as e:
+            logger.error(f"Error updating allowance settings for {user_id} in Cosmos DB: {e}")
+            raise
+    
+    def delete_last_transaction(self, user_id: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Delete the most recent transaction for a user.
+
+        Returns a tuple of (updated_account, deleted_transaction).
+        """
+        transaction = self.container.query_items(
+            query=(
+                "SELECT TOP 1 * FROM c "
+                "WHERE c.entityType = 'transaction' AND c.userId = @userId "
+                "ORDER BY c.timestamp DESC"
+            ),
+            parameters=[{"name": "@userId", "value": user_id}],
+            enable_cross_partition_query=False,
+        )
+        if not transaction:
+            return {}, {}
+
+        # get the transaction value
+        amount = transaction['amount']
+        direction = transaction['direction']
+        sign = 1 if direction == 'credit' else -1
+        account = self.get_account(user_id)
+        old_balance = float(account.get("currentBalance", 0.0))
+        new_balance = old_balance - sign * float(amount)
+        account["currentBalance"] = new_balance
+        account["lastUpdated"] = datetime.now(timezone.utc).isoformat()
+        
+        self.container.upsert_item(account)
+
+        self.container.delete_item(transaction['id'], partition_key=user_id)
+        logger.info(f"Deleted last allowance transaction in Cosmos DB for {user_id}")
+        return account, transaction
+
+
+def create_cosmos_allowance_repository(user_id: str = "default") -> CosmosAllowanceRepository:
+    """Factory for the Cosmos-based allowance repository.
+
+    Uses the same CosmosDBManager instance as the other stores and
+    optionally honors an ALLOWANCE_TX_TTL_DAYS environment variable
+    to control rolling transaction history.
+    """
+
+    ttl_env = os.getenv("ALLOWANCE_TX_TTL_DAYS")
+    ttl_days: Optional[int]
+    try:
+        ttl_days = int(ttl_env) if ttl_env is not None else None
+    except ValueError:
+        ttl_days = None
+
+    cosmos_manager = CosmosDBManager()
+    repo = CosmosAllowanceRepository(cosmos_manager, ttl_days=ttl_days)
+
+    # Touch the account to ensure the partition exists
+    repo.get_account(user_id)
+
+    return repo

@@ -7,7 +7,7 @@ storage managers with automatic fallback logic.
 import os
 import logging
 import time
-from typing import Dict, Any, Tuple, Protocol, runtime_checkable
+from typing import Dict, Any, Tuple, Protocol, runtime_checkable, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,47 @@ class StateStoreProtocol(Protocol):
     
     def reset(self) -> Dict[str, Any]:
         """Reset state to default values. Returns the new state."""
+        ...
+
+
+@runtime_checkable
+class AllowanceRepositoryProtocol(Protocol):
+    """Protocol defining the interface for allowance repositories.
+
+    Implementations can be backed by Cosmos DB or local files,
+    but must expose a consistent API for the Flask layer.
+    """
+
+    def get_account(self, user_id: str) -> Dict[str, Any]:
+        """Return the allowance account document for a user."""
+        ...
+
+    def get_recent_transactions(self, user_id: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """Return the most recent allowance transactions for a user."""
+        ...
+
+    def add_transaction(
+        self,
+        user_id: str,
+        amount: float,
+        tx_type: str,
+        description: Optional[str] = None,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Create a new transaction and update the account.
+
+        Returns a tuple of (updated_account, created_transaction).
+        """
+        ...
+
+    def update_settings(self, user_id: str, new_settings: Dict[str, Any]) -> Dict[str, Any]:
+        """Update account-level settings for a user and return the updated account."""
+        ...
+    
+    def delete_last_transaction(self, user_id: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Delete the most recent transaction for a user.
+
+        Returns a tuple of (updated_account, deleted_transaction).
+        """
         ...
 
 
@@ -101,6 +142,59 @@ def create_storage_managers(
         logger.error(f"❌ File-based storage dependencies missing: {e}")
         raise ImportError(
             "Neither Cosmos DB nor file-based storage are available. "
+            "Check your dependencies."
+        ) from e
+
+
+def create_allowance_repository(
+    user_id: str = "household",
+) -> AllowanceRepositoryProtocol:
+    """Factory to create an allowance repository with automatic fallback.
+
+    Uses Cosmos DB when configured, otherwise falls back to a file-based
+    implementation. The returned object conforms to AllowanceRepositoryProtocol.
+
+    Args:
+        user_id: User identifier used as partition key in Cosmos DB.
+
+    Returns:
+        An implementation of AllowanceRepositoryProtocol.
+    """
+
+    use_cosmos = os.getenv("USE_COSMOS_DB", "false").lower() == "true"
+
+    if use_cosmos:
+        try:
+            from cosmosdb_manager import create_cosmos_allowance_repository
+
+            logger.info("Initializing Cosmos DB allowance repository...")
+            repo = create_cosmos_allowance_repository(user_id=user_id)
+
+            assert isinstance(repo, AllowanceRepositoryProtocol)
+
+            logger.info("✅ Cosmos DB allowance repository initialized successfully")
+            return repo
+
+        except ImportError as e:
+            logger.error(f"❌ Cosmos DB dependencies missing for allowance: {e}")
+            logger.warning("Falling back to file-based allowance repository")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Cosmos DB allowance repository: {e}")
+            logger.warning("Falling back to file-based allowance repository")
+
+    logger.info("Using file-based allowance repository")
+    try:
+        from jsonfile_manager import create_file_allowance_repository
+
+        repo = create_file_allowance_repository()
+        assert isinstance(repo, AllowanceRepositoryProtocol)
+
+        return repo
+
+    except ImportError as e:
+        logger.error(f"❌ File-based allowance repository dependencies missing: {e}")
+        raise ImportError(
+            "Neither Cosmos DB nor file-based allowance repositories are available. "
             "Check your dependencies."
         ) from e
 

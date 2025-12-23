@@ -1,5 +1,8 @@
 import json
 import logging
+from datetime import datetime, timezone
+from typing import List, Dict, Tuple, Optional
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -115,6 +118,161 @@ class FileStateStore(BaseJsonStore):
             }
         }
 
+
+
+class FileAllowanceStore(BaseJsonStore):
+    """File-based store for allowance accounts and transactions.
+
+    File structure (example):
+    {
+      "Milou": {
+        "account": { ... },
+        "transactions": [ {...}, ... ]
+      },
+      "Luca": { ... }
+    }
+    """
+
+    _file_name = "allowance_state.json"
+
+    def get_default_content(self) -> dict:
+        def default_account():
+            return {
+                "id": None,
+                "entityType": "account",
+                "currentBalance": 0.0,
+                "currency": "EUR",
+                "settings": {
+                    "weeklyAllowance": 0.0,
+                    "autoPayDayOfWeek": 5,
+                },
+                "lastUpdated": None,
+                "version": 1,
+            }
+
+        return {
+            "Milou": {
+                "account": default_account(),
+                "transactions": [],
+            },
+            "Luca": {
+                "account": default_account(),
+                "transactions": [],
+            },
+        }
+
+
+class FileAllowanceRepository:
+    """Allowance repository implementation backed by a local JSON file."""
+
+    def __init__(self, store: FileAllowanceStore):
+        self.store = store
+
+    def _ensure_user(self, data: dict, user_id: str) -> None:
+        if user_id not in data:
+            # Initialize with default structure for new users
+            template = self.store.get_default_content()
+            if user_id in template:
+                data[user_id] = template[user_id]
+            else:
+                data[user_id] = {
+                    "account": {
+                        "id": None,
+                        "entityType": "account",
+                        "currentBalance": 0.0,
+                        "currency": "EUR",
+                        "settings": {
+                            "weeklyAllowance": 0.0,
+                            "autoPayDayOfWeek": 5,
+                        },
+                        "lastUpdated": None,
+                        "version": 1,
+                    },
+                    "transactions": [],
+                }
+
+        # Ensure there is an id on the account for consistency
+        account = data[user_id]["account"]
+        if account.get("id") is None:
+            account["id"] = f"account#{user_id}"
+
+    def get_account(self, user_id: str) -> dict:
+        data = self.store.load()
+        self._ensure_user(data, user_id)
+        self.store.save(data)
+        return data[user_id]["account"]
+
+    def get_recent_transactions(self, user_id: str, limit: int = 20) -> List[Dict]:
+        data = self.store.load()
+        self._ensure_user(data, user_id)
+        transactions = data[user_id]["transactions"]
+
+        # Sort newest first by timestamp when available
+        def ts(tx: dict) -> str:
+            return tx.get("timestamp", "")
+
+        transactions_sorted = sorted(transactions, key=ts, reverse=True)
+        return transactions_sorted[: int(limit)]
+
+    def add_transaction(
+        self,
+        user_id: str,
+        amount: float,
+        tx_type: str,
+        description: Optional[str] = None,
+    ) -> Tuple[Dict, Dict]:
+        data = self.store.load()
+        self._ensure_user(data, user_id)
+
+        account = data[user_id]["account"]
+        old_balance = float(account.get("currentBalance", 0.0))
+        new_balance = old_balance + float(amount)
+
+        now = datetime.now(timezone.utc).isoformat()
+
+        tx_doc: dict = {
+            "id": f"tx#{user_id}#{uuid.uuid4()}",
+            "entityType": "transaction",
+            "userId": user_id,
+            "timestamp": now,
+            "amount": float(amount),
+            "direction": "credit" if amount >= 0 else "debit",
+            "type": tx_type,
+            "description": description,
+            "balanceAfter": new_balance,
+        }
+
+        data[user_id]["transactions"].append(tx_doc)
+
+        account["currentBalance"] = new_balance
+        account["lastUpdated"] = now
+        account["version"] = int(account.get("version", 1)) + 1
+
+        self.store.save(data)
+        logger.info(f"Allowance transaction stored in file backend for {user_id}")
+        return account, tx_doc
+
+    def update_settings(self, user_id: str, new_settings: dict) -> dict:
+        data = self.store.load()
+        self._ensure_user(data, user_id)
+
+        account = data[user_id]["account"]
+        settings = account.setdefault("settings", {})
+        settings.update(new_settings)
+
+        now = datetime.now(timezone.utc).isoformat()
+        account["lastUpdated"] = now
+        account["version"] = int(account.get("version", 1)) + 1
+
+        self.store.save(data)
+        logger.info(f"Allowance settings updated in file backend for {user_id}")
+        return account
+
+
+def create_file_allowance_repository() -> FileAllowanceRepository:
+    """Factory for the file-based allowance repository."""
+    store = FileAllowanceStore()
+    return FileAllowanceRepository(store)
 
 
 # Initialize stores with new names
