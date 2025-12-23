@@ -13,8 +13,9 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
-from storage_factory import create_storage_managers, get_storage_info
 
+from storage_factory import create_storage_managers, get_storage_info, create_allowance_repository
+from allowance_api import allowance_bp
 
 # Constants for environment variable keys
 APP_USERNAME = 'APP_USERNAME'
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize storage managers using factory method
 config_store, state_store = create_storage_managers(user_id="household2")
+allowance_repository = create_allowance_repository(user_id="Milou")
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv('SECRET')
@@ -39,6 +41,11 @@ except KeyError as e:
     logger.error(f"No username and/or password environment variables found, terminating application")
     exit(1)
 CORS(app)
+
+# add allowance API blueprint
+app.config["ALLOWANCE_REPOSITORY"] = allowance_repository
+app.register_blueprint(allowance_bp)
+
 
 # setup Flask-Login
 login_manager = LoginManager()

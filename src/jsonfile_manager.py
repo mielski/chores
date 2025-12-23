@@ -267,6 +267,31 @@ class FileAllowanceRepository:
         self.store.save(data)
         logger.info(f"Allowance settings updated in file backend for {user_id}")
         return account
+    
+    
+    def delete_last_transaction(self, user_id: str) -> Tuple[Dict, Dict]:
+        data = self.store.load()
+        self._ensure_user(data, user_id)
+
+        transactions = data[user_id]["transactions"]
+        if not transactions:
+            raise ValueError("No transactions to delete")
+
+        last_tx = transactions.pop()
+        amount = last_tx["amount"]
+
+        account = data[user_id]["account"]
+        old_balance = float(account.get("currentBalance", 0.0))
+        new_balance = old_balance - float(amount)
+
+        account["currentBalance"] = new_balance
+        now = datetime.now(timezone.utc).isoformat()
+        account["lastUpdated"] = now
+        account["version"] = int(account.get("version", 1)) + 1
+
+        self.store.save(data)
+        logger.info(f"Deleted last transaction for {user_id} in file backend")
+        return account, last_tx
 
 
 def create_file_allowance_repository() -> FileAllowanceRepository:

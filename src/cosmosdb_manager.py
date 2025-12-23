@@ -263,8 +263,9 @@ class CosmosAllowanceRepository:
             self.ttl_seconds = int(ttl_days * 24 * 60 * 60)
 
     def _default_account(self, user_id: str) -> Dict[str, Any]:
+        """returns a default JSON object for an account definition."""
         return {
-            "id": f"account#{user_id}",
+            "id": f"account_{user_id}",
             "entityType": "account",
             "userId": user_id,
             "currentBalance": 0.0,
@@ -278,7 +279,7 @@ class CosmosAllowanceRepository:
         }
 
     def _get_or_create_account(self, user_id: str) -> Dict[str, Any]:
-        account_id = f"account#{user_id}"
+        account_id = f"account_{user_id}"
         try:
             item = self.container.read_item(item=account_id, partition_key=user_id)
             return item
@@ -341,7 +342,7 @@ class CosmosAllowanceRepository:
         now = datetime.now(timezone.utc).isoformat()
 
         tx_doc: Dict[str, Any] = {
-            "id": f"tx#{user_id}#{uuid.uuid4()}",
+            "id": f"tx_{user_id}_{uuid.uuid4()}",
             "entityType": "transaction",
             "userId": user_id,
             "timestamp": now,
@@ -408,11 +409,9 @@ class CosmosAllowanceRepository:
 
         # get the transaction value
         amount = transaction['amount']
-        direction = transaction['direction']
-        sign = 1 if direction == 'credit' else -1
         account = self.get_account(user_id)
         old_balance = float(account.get("currentBalance", 0.0))
-        new_balance = old_balance - sign * float(amount)
+        new_balance = old_balance - float(amount)
         account["currentBalance"] = new_balance
         account["lastUpdated"] = datetime.now(timezone.utc).isoformat()
         
