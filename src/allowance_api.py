@@ -122,7 +122,8 @@ def get_allowance_transactions(user_id: str):
     
     return jsonify({
         "success": True,
-        "data": transactions
+        "transactions": transactions,
+
     }), 200
 
 
@@ -145,9 +146,8 @@ def create_allowance_transaction(user_id: str):
             "transaction": { ... created transaction ... }
         }
 
-    TODO: implement using repo.add_transaction(...).
     """
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json() or {}
 
     # Example of basic validation you can extend:
     if "amount" not in payload:
@@ -155,13 +155,40 @@ def create_allowance_transaction(user_id: str):
             "success": False,
             "error": "Missing required field 'amount'",
         }), 400
+    
+    if "tx_type" not in payload:
+        payload["tx_type"] = "MANUAL"  # default type
+    if payload["tx_type"] not in ("ALLOWANCE", "BONUS", "MANUAL"):
+        return jsonify({
+            "success": False,
+            "error": "Invalid transaction type",
+        }), 400
+    if not isinstance(payload["amount"], (int, float)):
+        return jsonify({
+            "success": False,
+            "error": "'amount' must be a number",
+        }), 400
+    repo = _get_repo()
 
-    # TODO: replace this stub implementation
+    try:
+        account, transaction = repo.add_transaction(
+            user_id=user_id,
+            amount=payload["amount"],
+            tx_type=payload["tx_type"],
+            description=payload.get("description")
+        )
+    except Exception as e:
+        logging.exception("Error adding transaction on server side", exc_info=e)
+        return jsonify({
+            "success": False,
+            "error": "Unknown system error in creating transaction",
+            "payload": payload,
+        }), 500
     return jsonify({
-        "success": False,
-        "error": "Not implemented yet: POST /api/allowance/<user_id>/transactions",
-        "payload": payload,
-    }), 501
+        "success": True,
+        "account": account,
+        "transaction": transaction,
+    }), 200
 
 
 @allowance_bp.route("/<user_id>/settings", methods=["PATCH", "PUT"])
