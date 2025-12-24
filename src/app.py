@@ -129,6 +129,13 @@ def config_page():
     """Serve the configuration page"""
     return send_from_directory('static', 'configpage.html')
 
+
+@app.route('/docs')
+@login_required
+def api_docs():
+    """Serve Swagger UI for the Household API."""
+    return render_template('swagger.html')
+
 @app.route('/<path:filename>')
 def static_files(filename):
     """Serve static files (CSS, JS, etc.)"""

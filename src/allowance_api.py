@@ -89,29 +89,41 @@ def get_allowance_account(user_id: str):
 def get_allowance_transactions(user_id: str):
     """Get recent allowance transactions for a user.
 
+    Path parameters:
+        - user_id: the uder for which to return transactions.
     Query parameters:
         - limit (int, optional): maximum number of transactions to return.
 
     Expected JSON response shape on success:
         {"success": True, "data": [ ... transaction documents ... ]}
 
-    TODO: implement using repo.get_recent_transactions(user_id, limit).
     """
     # Example of how to parse the limit parameter (you can reuse this):
     try:
         limit = int(request.args.get("limit", 20))
+        if limit <= 0:
+            raise ValueError()
     except ValueError:
         return jsonify({
             "success": False,
             "error": "Invalid 'limit' query parameter",
         }), 400
 
-    # TODO: replace this stub implementation
+    repo = _get_repo()
+    try:
+        transactions = repo.get_recent_transactions(user_id=user_id, limit=limit)
+    except Exception as e:
+        logging.exception("Error getting transactions from server side", exc_info=e)
+        return jsonify({
+            "success": False,
+            "error": "Unknown system error in getting recent transactions",
+            "limit": limit,
+        }), 500
+    
     return jsonify({
-        "success": False,
-        "error": "Not implemented yet: GET /api/allowance/<user_id>/transactions",
-        "limit": limit,
-    }), 501
+        "success": True,
+        "data": transactions
+    }), 200
 
 
 @allowance_bp.route("/<user_id>/transactions", methods=["POST"])
