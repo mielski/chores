@@ -95,22 +95,12 @@ class FileStateStore(BaseJsonStore):
         
         return {
             "Milou": {
-                "config": {
-                    "tasksPerWeek": 9,
-                    "allowance": 3.0,
-                    "reward": 0.2
-                },
                 "choreList": [
                     {"name": "Take out trash", "date": "2025-12-10"},
                     {"name": "Wash dishes", "date": "2025-12-11"}
                 ]
             },
             "Luca": {
-                "config": {
-                    "tasksPerWeek": 6,
-                    "allowance": 1.0,
-                    "reward": 0.1
-                },
                 "choreList": [
                     {"name": "Clean room", "date": "2025-12-10"},
                     {"name": "Do homework", "date": "2025-12-11"}
@@ -184,8 +174,10 @@ class FileAllowanceRepository:
                         "currentBalance": 0.0,
                         "currency": "EUR",
                         "settings": {
-                            "weeklyAllowance": 0.0,
-                            "autoPayDayOfWeek": 5,
+                            "weeklyAllowance": 0.2,
+                            "tasksPerWeek": 7,
+                            "bonusPerExtraTask": 0.1,
+                            "maximumExtraTasks": 4,
                         },
                         "lastUpdated": None,
                         "version": 1,

@@ -203,20 +203,10 @@ class CosmosStateStore:
         """Reset state using the app configuration to define the structure"""
         state = {
             "Milou": {
-                "config": {
-                    "tasksPerWeek": 9,
-                    "allowance": 3.0,
-                    "reward": 0.2
-                },
                 "choreList": [
                 ]
             },
             "Luca": {
-                "config": {
-                    "tasksPerWeek": 6,
-                    "allowance": 1.0,
-                    "reward": 0.1
-                },
                 "choreList": [
                 ]
             }

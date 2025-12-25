@@ -235,12 +235,12 @@ The application uses two JSON files for data persistence:
          "name": "Wash dishes"
          }
       ],
-      "config": {
-         "allowance": 3, // weekly allowance in euros
-         "reward": 0.2, // reward per bonus completed task in euros
-         "tasksPerWeek": 9 // number of tasks to complete per week
-      }
-  },
+      "settings": {  
+         "tasksPerWeek": 7,
+         "weeklyAllowance": 3.0,
+         "bonusPerExtraTask": 0.2,
+         "maximumExtraTasks": 4
+      },
    "Luca":  {
       ... // similar structure as Milou
    }

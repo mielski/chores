@@ -277,11 +277,12 @@ def update_allowance_settings(user_id: str):
     
     if request.method == "PUT":
         # For PUT, ensure all settings are provided
-        missing_keys = len(validator.schema.keys()) == len(new_settings.keys())
+        required_keys = set(validator.schema.schema.keys())
+        missing_keys = required_keys - new_settings.keys()
         if missing_keys:
             return jsonify({
                 "success": False,
-                "error": "Missing settings keys for PUT",
+                "error": f"Missing settings keys for PUT: {missing_keys}",
             }), 400
 
     try:

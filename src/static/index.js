@@ -59,7 +59,7 @@ class ChoreManager {
   setState(userData) {
     // set the state of the chore manager from data
     this.currentChores = [...userData.choreList] || [];
-    this.choresTarget = userData.config.tasksPerWeek;
+    this.choresTarget = userData.settings.tasksPerWeek;
   }
 
   async updateFromAppState() {
@@ -281,6 +281,8 @@ class App {
       console.log("updateWidgets -> No application state set for update");
       return;
     }
+    console.log(this.state);
+    
     this.widgets.forEach((widget) => widget.updateFromAppState());
   }
 
