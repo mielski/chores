@@ -369,17 +369,7 @@
             }
           },
           "400": {
-            "description": "No settings provided",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponse"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Not implemented yet",
+            "description": "No settings provided / invalid data",
             "content": {
               "application/json": {
                 "schema": {
@@ -467,16 +457,26 @@
         "properties": {
           "weeklyAllowance": {
             "type": "number",
-            "description": "Weekly allowance amount"
+            "description": "Weekly allowance amount",
+            "minimum": 0.0
           },
-          "autoPayDayOfWeek": {
+          "tasksPerWeek": {
             "type": "integer",
-            "minimum": 0,
-            "maximum": 6,
-            "description": "Day of week for automatic allowance payout (0=Monday)"
+            "description": "Number of tasks to complete per week for full allowance",
+            "minimum": 1
+          },
+          "bonusPerExtraTask": {
+            "type": "number",
+            "description": "Bonus amount per extra completed task beyond tasksPerWeek",
+            "minimum": 0.0
+          },
+          "maximumExtraTasks": {
+            "type": "integer",
+            "description": "Maximum number of extra tasks eligible for bonus",
+            "minimum": 0
           }
         },
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "AllowanceAccount": {
         "type": "object",

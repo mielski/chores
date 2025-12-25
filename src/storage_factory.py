@@ -75,8 +75,14 @@ class AllowanceRepositoryProtocol(Protocol):
         """
         ...
 
-    def update_settings(self, user_id: str, new_settings: Dict[str, Any]) -> Dict[str, Any]:
-        """Update account-level settings for a user and return the updated account."""
+    def update_settings(self, user_id: str, new_settings: Dict[str, Any], replace: bool = False) -> Dict[str, Any]:
+        """Update account-level settings for a user and return the updated account.
+        
+        parameters:
+            user_id: User identifier
+            new_settings: Dict of settings to update
+            replace: If True, replace existing settings entirely; if False, update selectively.
+        """
         ...
     
     def delete_last_transaction(self, user_id: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:

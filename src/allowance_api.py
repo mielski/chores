@@ -29,6 +29,7 @@ and then call the methods listed above.
 """
 import logging
 
+from cerberus import Validator
 from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required
 
@@ -234,16 +235,20 @@ def delete_last_allowance_transaction(user_id: str):
 def update_allowance_settings(user_id: str):
     """Update allowance settings for a user.
 
+    parameters:
+        - user_id: the user for which to update settings.
+
     Expected JSON request body (example):
         {
             "weeklyAllowance": 2.5,
-            "autoPayDayOfWeek": 5
+            "tasksPerWeek": 7,
+            "bonusPerExtraTask": 0.5,
+            "maximumExtraTasks": 3
         }
 
     Expected JSON response shape on success:
         {"success": True, "data": { ... updated account ... }}
 
-    TODO: implement using repo.update_settings(user_id, new_settings).
     """
     new_settings = request.get_json(silent=True) or {}
 
@@ -254,9 +259,52 @@ def update_allowance_settings(user_id: str):
             "error": "No settings provided",
         }), 400
 
-    # TODO: replace this stub implementation
+    # validate settings
+    validator = Validator({
+        "weeklyAllowance": {"type": "number", "min": 0, "required": False},
+        "tasksPerWeek": {"type": "integer", "min": 1, "required": False},
+        "bonusPerExtraTask": {"type": "number", "min": 0, "required": False},
+        "maximumExtraTasks": {"type": "integer", "min": 0, "required": False},
+    }, allow_unknown=False)
+
+    if not validator.validate(new_settings):
+        return jsonify({
+            "success": False,
+            "error": "Invalid settings values provided",
+            "details": validator.errors,
+        }), 400
+    
+    
+    if request.method == "PUT":
+        # For PUT, ensure all settings are provided
+        missing_keys = len(validator.schema.keys()) == len(new_settings.keys())
+        if missing_keys:
+            return jsonify({
+                "success": False,
+                "error": "Missing settings keys for PUT",
+            }), 400
+
+    try:
+        # get current account settings
+        repo = _get_repo()
+        
+        
+        # update the account settings
+        if request.method == "PATCH":
+            repo.update_settings(user_id=user_id, new_settings=new_settings, replace=False)
+        else:  # request.method == "PUT"
+            repo.update_settings(user_id=user_id, new_settings=new_settings, replace=True)
+
+        account = repo.get_account(user_id=user_id)
+    except Exception as e:
+        logging.exception("Error updating allowance settings on server side", exc_info=e)
+        return jsonify({
+            "success": False,
+            "error": "Unknown system error in updating settings",
+            "new_settings": new_settings,
+        }), 500
+    
     return jsonify({
-        "success": False,
-        "error": "Not implemented yet: PATCH /api/allowance/<user_id>/settings",
-        "payload": new_settings,
-    }), 501
+        "success": True,
+        "data": account,
+    }), 200

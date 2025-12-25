@@ -143,8 +143,10 @@ class FileAllowanceStore(BaseJsonStore):
                 "currentBalance": 0.0,
                 "currency": "EUR",
                 "settings": {
-                    "weeklyAllowance": 0.0,
-                    "autoPayDayOfWeek": 5,
+                    "weeklyAllowance": 2.0,
+                    "tasksPerWeek": 7,
+                    "bonusPerExtraTask": 0.5,
+                    "maximumExtraTasks": 4,
                 },
                 "lastUpdated": None,
                 "version": 1,
@@ -252,13 +254,23 @@ class FileAllowanceRepository:
         logger.info(f"Allowance transaction stored in file backend for {user_id}")
         return account, tx_doc
 
-    def update_settings(self, user_id: str, new_settings: dict) -> dict:
+    def update_settings(self, user_id: str, new_settings: dict, replace: bool = False) -> dict:
+        """Update account-level settings for a user and return the updated account.
+        
+        parameters:
+            user_id: User identifier
+            new_settings: Dict of settings to update
+            replace: If True, replace existing settings entirely; if False, update selectively.
+        """
         data = self.store.load()
         self._ensure_user(data, user_id)
 
         account = data[user_id]["account"]
-        settings = account.setdefault("settings", {})
-        settings.update(new_settings)
+        if replace:
+            account["settings"] = new_settings
+        else:
+            settings = account.setdefault("settings", {})
+            settings.update(new_settings)
 
         now = datetime.now(timezone.utc).isoformat()
         account["lastUpdated"] = now
