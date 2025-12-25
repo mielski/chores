@@ -8,7 +8,7 @@ Expected repository interface (see storage_factory.AllowanceRepositoryProtocol):
 
 - get_account(user_id: str) -> dict
 - get_recent_transactions(user_id: str, limit: int = 20) -> list[dict]
-- add_transaction(user_id: str, amount: float, tx_type: str, description: str | None = None) -> tuple[dict, dict]
+- add_transaction(user_id: str, amount: float, type: str, description: str | None = None) -> tuple[dict, dict]
 - update_settings(user_id: str, new_settings: dict) -> dict
 - remove_last_transaction(user_id: str) -> dict
 
@@ -156,9 +156,9 @@ def create_allowance_transaction(user_id: str):
             "error": "Missing required field 'amount'",
         }), 400
     
-    if "tx_type" not in payload:
-        payload["tx_type"] = "MANUAL"  # default type
-    if payload["tx_type"] not in ("ALLOWANCE", "BONUS", "MANUAL"):
+    if "type" not in payload:
+        payload["type"] = "MANUAL"  # default type
+    if payload["type"] not in ("ALLOWANCE", "BONUS", "MANUAL"):
         return jsonify({
             "success": False,
             "error": "Invalid transaction type",
@@ -174,7 +174,7 @@ def create_allowance_transaction(user_id: str):
         account, transaction = repo.add_transaction(
             user_id=user_id,
             amount=payload["amount"],
-            tx_type=payload["tx_type"],
+            tx_type=payload["type"],
             description=payload.get("description")
         )
     except Exception as e:

@@ -493,7 +493,7 @@
             "type": "string",
             "enum": ["credit", "debit"]
           },
-          "tx_type": {
+          "type": {
             "type": "string",
             "description": "Transaction type",
             "example": "ALLOWANCE"
@@ -515,7 +515,7 @@
           "amount": {
             "type": "number"
           },
-          "tx_type": {
+          "type": {
             "type": "string",
             "description": "Transaction type (e.g. ALLOWANCE, BONUS, MANUAL)"
           },
