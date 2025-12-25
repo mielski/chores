@@ -83,6 +83,8 @@ class AllowanceRepositoryProtocol(Protocol):
         """Delete the most recent transaction for a user.
 
         Returns a tuple of (updated_account, deleted_transaction).
+
+        If no transactions exist, an empty dict is returned for deleted_transaction.
         """
         ...
 

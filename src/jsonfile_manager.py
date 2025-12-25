@@ -270,12 +270,19 @@ class FileAllowanceRepository:
     
     
     def delete_last_transaction(self, user_id: str) -> Tuple[Dict, Dict]:
+        """Delete the most recent transaction for a user.
+
+        Returns a tuple of (updated_account, deleted_transaction).
+
+        If no transactions exist, an empty dict is returned for deleted_transaction.
+        """
+
         data = self.store.load()
         self._ensure_user(data, user_id)
-
+    
         transactions = data[user_id]["transactions"]
         if not transactions:
-            raise ValueError("No transactions to delete")
+            return data[user_id]["account"], {}
 
         last_tx = transactions.pop()
         amount = last_tx["amount"]

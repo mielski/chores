@@ -394,7 +394,10 @@ class CosmosAllowanceRepository:
         """Delete the most recent transaction for a user.
 
         Returns a tuple of (updated_account, deleted_transaction).
+
+        If no transactions exist, an empty dict is returned for deleted_transaction.
         """
+        account = self.get_account(user_id)
         transaction = self.container.query_items(
             query=(
                 "SELECT TOP 1 * FROM c "
@@ -405,11 +408,10 @@ class CosmosAllowanceRepository:
             enable_cross_partition_query=False,
         )
         if not transaction:
-            return {}, {}
+            return account, {}
 
         # get the transaction value
         amount = transaction['amount']
-        account = self.get_account(user_id)
         old_balance = float(account.get("currentBalance", 0.0))
         new_balance = old_balance - float(amount)
         account["currentBalance"] = new_balance

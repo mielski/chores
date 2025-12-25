@@ -257,7 +257,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AllowanceTransactionCreateResponse"
+                  "$ref": "#/components/schemas/AllowanceTransactionChangeResponse"
                 }
               }
             }
@@ -274,6 +274,49 @@
           },
           "501": {
             "description": "Not implemented yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/allowance/{user_id}/transactions/last": {
+      "delete": {
+        "summary": "Delete the last allowance transaction",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User id"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Last transaction deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceTransactionChangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No transactions to delete",
             "content": {
               "application/json": {
                 "schema": {
@@ -570,7 +613,7 @@
         },
         "required": ["success"]
       },
-      "AllowanceTransactionCreateResponse": {
+      "AllowanceTransactionChangeResponse": {
         "type": "object",
         "properties": {
           "success": {

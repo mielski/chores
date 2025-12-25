@@ -190,6 +190,44 @@ def create_allowance_transaction(user_id: str):
         "transaction": transaction,
     }), 200
 
+@allowance_bp.route("/<user_id>/transactions/last", methods=["DELETE"])
+@login_required
+def delete_last_allowance_transaction(user_id: str):
+    """
+    delete_last_allowance_transaction for the user
+    
+    Path parameters:
+        - user_id: the uder for which to return transactions.
+    
+    Expected JSON response shape on success:
+        {
+            "success": True,
+            "account": { ... updated account ... },
+            "transaction": { ... deleted transaction ... }
+        }
+    """
+
+    repo = _get_repo()
+    try:
+        account, transaction = repo.delete_last_transaction(user_id=user_id)
+    except Exception as e:
+        logging.exception("Error deleting last transaction on server side", exc_info=e)
+        return jsonify({
+            "success": False,
+            "error": "Unknown system error in deleting last transaction",
+        }), 500
+    if transaction == {}:
+        return jsonify({
+            "success": False,
+            "error": "No transactions to delete",
+        }), 400
+    
+    return jsonify({
+        "success": True,
+        "account": account,
+        "transaction": transaction,
+    }), 200
+
 
 @allowance_bp.route("/<user_id>/settings", methods=["PATCH", "PUT"])
 @login_required
