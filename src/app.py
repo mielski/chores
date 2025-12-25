@@ -27,6 +27,7 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
 
 # Initialize storage managers using factory method
 config_store, state_store = create_storage_managers(user_id="household2")

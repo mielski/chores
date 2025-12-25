@@ -52,6 +52,7 @@ Thumbs.db
 # app state management
 household_state.json
 task_config.json
+allowance_state.json
 
 
 # Logs
