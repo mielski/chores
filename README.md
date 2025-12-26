@@ -5,6 +5,7 @@ A web application for tracking household tasks and allowances for multiple famil
 ## Features
 
 - ✅ Track tasks for multiple family members with configurable weekly goals
+- 🪙 Track savings and weekly allowance
 - 📊 Progress bars showing task completion
 - 💾 Persistent state shared across all devices on the network
 - 📱 Mobile-friendly responsive design
@@ -71,7 +72,7 @@ The application consists of:
 
    ```
    
-### Option 1: Local Development with Docker
+### Option 2: Local Development with Docker
 
 1. **Prerequisites**
 
@@ -104,7 +105,7 @@ The application consists of:
    - Click the ⚙️ (settings) button to configure tasks and users
    - The app will be accessible from any device on your local network using your computer's IP address
 
-### Option 2: Deploy to Azure Container Apps
+### Option 3: Deploy to Azure Container Apps
 
 In this option, the app will be deployed to Azure Container Apps and the image will be pushed to
 the public docker hub registry.
@@ -154,72 +155,43 @@ To access the app from other devices on your local network:
 
 ### Project Structure
 
-```
+```text
 household-tracker/
-├── Dockerfile             # Container configuration
-├── azure.yaml             # Azure deployment configuration
+├── Dockerfile               # Container configuration
+├── azure.yaml               # Azure deployment configuration
 ├── src/
-│   ├── app.py              # Flask application code
-│   ├── statemanager.py     # State and configuration management
-│   ├── requirements.txt    # Python dependencies
-│   ├── task_config.json    # Configuration file (auto-generated)
-│   ├── household_state.json # State file (auto-generated)
+│   ├── app.py               # Flask application code
+│   ├── cosmosdb_manager.py  # manager for Cosmos DB storage
+│   ├── storage_factory.py   # Factory for storage backends (file or Cosmos DB)
+│   ├── jsonfile_manager.py  # manager for JSON file storage
+│   ├── aklowance_api.py     # Flask blueprint for allowance API
+│   ├── requirements.txt     # Python dependencies
 │   ├── static/
-│   │   ├── index.html      # Main HTML file
-│   │   ├── config.html     # Configuration interface
-│   │   ├── script.js       # Frontend JavaScript (dynamic)
-│   │   ├── config.js       # Configuration interface JavaScript
-│   │   └── style.css       # CSS styles (with dynamic colors)
+│   │   ├── index.html       # Main HTML file
+│   │   ├── configpage.html  # Configuration interface
+│   │   ├── configpage.js    # Configuration interface
+│   │   ├── script.js        # Frontend JavaScript (dynamic)
+│   │   ├── config.js        # Configuration interface JavaScript
+│   │   └── style.css        # CSS styles (with dynamic colors)
 │   └── templates/
-│       └── login.html      # HTML template for login page
-├── .dockerignore           # Docker ignore file
+│       └── login.html       # HTML template for login page
+├── .dockerignore            # Docker ignore file
 ├── infra/
-│   ├── main.bicep         # Azure infrastructure as code
-│   └── main.parameters.json
-├── deploy-local.*         # Local deployment scripts
-├── deploy-infra.sh        # Azure infrastructure deployment script
-├── build-and-push.sh      # Docker build and push script, use to push new version to Docker Hub and 
-                             redeploy
+│   ├── main.bicep           # Azure infrastructure as code
+│   └── main.parameters.json # Azure infrastructure parameters
+├── deploy-local.*           # Local deployment scripts
+├── deploy-infra.sh          # Azure infrastructure deployment script
+└── build-and-push.sh        # Build and push image to Docker Hub and redeploy
 ```
 
 ### API Endpoints
 
-- `GET /` - Serve the main application
-- `GET /config` - Serve the configuration interface
-- `GET /api/config` - Get current app configuration
-- `POST /api/config` - Update app configuration
-- `GET /api/state` - Get current task state
-- `POST /api/state` - Update task state
-- `POST /api/reset` - Reset all tasks
-- `GET /api/health` - Health check
+See [Swagger API Documentation](src/static/openapi.json) for detailed API endpoints.
+or the /docs endpoint when running the app.
 
 ### State Management
 
-The application uses two JSON files for data persistence:
-
-**Task Configuration (`task_config.json`):**
-```json
-{
-  "users": {
-    "milou": {
-      "tasksPerWeek": 7,
-      "color": "#0ef706dc",
-      "displayName": "Milou"
-    },
-    "luca": {
-      "tasksPerWeek": 5,
-      "color": "#29b100", 
-      "displayName": "Luca"
-    }
-  },
-  "personalTasks": ["Vaatwasser", "Koken", "Boodschappen", ...],
-  "generalTasks": {
-    "count": 2,
-    "tasks": ["Huiskamer opruimen", "Takken verzorgen"]
-  },
-  "messages": ["lekker bezig! 🚀", "ga zo door! 🌟", ...]
-}
-```
+The application uses a store and repository data persistence:
 
 **Task State (`household_state.json`):**
 ```json
@@ -235,20 +207,67 @@ The application uses two JSON files for data persistence:
          "name": "Wash dishes"
          }
       ],
-      "config": {
-         "allowance": 3, // weekly allowance in euros
-         "reward": 0.2, // reward per bonus completed task in euros
-         "tasksPerWeek": 9 // number of tasks to complete per week
-      }
-  },
    "Luca":  {
       ... // similar structure as Milou
    }
 }
 ```
 
-The state automatically adjusts when configuration changes. For example, if you change Milou's weekly tasks from 7 to 5, the state array will be resized accordingly.
+Note that the task state does not contain settings any more. This is now a part of the allowance API. For backward compatibility, the getstate endpoint will add the settings dynamically from the allowance API.
 
+ For example:
+```json
+{
+   "Milou": {
+      "settings": {   // dynamically added
+         "weeklyTasks": 7,
+         "weeklyAllowance": 5.0,
+         "currencySymbol": "$",
+         "themeColor": "#4CAF50"
+      },
+      "choreList": [ ... ]
+    },
+   "Luca": {
+      "settings": {...}, // dynamically added
+      "choreList": [ ... ]
+    }
+   }
+}
+```
+
+** Allowance API State: **
+
+The allowance API stores user settings, account balance, and transaction history. Note that the structure may vary based on implementation. This example is for the file storage backend. This backend uses a single JSON file to store all user data.
+   
+```json
+{
+  "Milou": {
+    "account": {
+      "id": "account#Milou",
+      "entityType": "account",
+      "currentBalance": 0.0,
+      "currency": "EUR",
+      "settings": {
+        "weeklyAllowance": 2.5,
+        "tasksPerWeek": 9,
+        "bonusPerExtraTask": 0.15,
+        "maximumExtraTasks": 5
+      },
+      "lastUpdated": "2025-12-25T21:31:31.286417+00:00",
+      "version": 17
+    },
+    "transactions": [
+      {
+        "id": "tx#Milou#2025-12-25T21:31:31.286417+00:00",
+        "entityType": "transaction",
+        "amount": 0.0,
+        "type": "initial",
+        "description": "Initial account creation",
+        "timestamp": "2025-12-25T21:31:31.286417+00:00"
+      }
+    ]
+  },
+```
 ## Azure Deployment Details
 
 ### Resources Created

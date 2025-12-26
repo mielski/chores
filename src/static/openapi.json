@@ -1,0 +1,649 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Household Task & Allowance API",
+    "version": "1.0.0",
+    "description": "API for task configuration/state and allowance management."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Same origin as docs (/docs)"
+    }
+  ],
+  "paths": {
+    "/api/config": {
+      "get": {
+        "summary": "Get task configuration",
+        "responses": {
+          "200": {
+            "description": "Current configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Update task configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration updated"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/api/state": {
+      "get": {
+        "summary": "Get application state",
+        "responses": {
+          "200": {
+            "description": "Current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Update application state",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "State updated"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/api/reset": {
+      "post": {
+        "summary": "Reset application state based on configuration",
+        "responses": {
+          "200": {
+            "description": "State reset"
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Health information"
+          }
+        }
+      }
+    },
+    "/api/version": {
+      "get": {
+        "summary": "Get application version",
+        "responses": {
+          "200": {
+            "description": "Version information"
+          }
+        }
+      }
+    },
+    "/api/storage": {
+      "get": {
+        "summary": "Get storage backend information",
+        "responses": {
+          "200": {
+            "description": "Storage info"
+          }
+        }
+      }
+    },
+    "/api/allowance/{user_id}/account": {
+      "get": {
+        "summary": "Get allowance account for a user",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User id"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceAccountResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/allowance/{user_id}/transactions": {
+      "get": {
+        "summary": "Get recent transactions for a user",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User id"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Maximum number of transactions to return"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceTransactionListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid limit parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new allowance transaction",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllowanceTransactionCreateRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceTransactionChangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not implemented yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/allowance/{user_id}/transactions/last": {
+      "delete": {
+        "summary": "Delete the last allowance transaction",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User id"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Last transaction deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceTransactionChangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No transactions to delete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/allowance/{user_id}/settings": {
+      "patch": {
+        "summary": "Update allowance settings (partial)",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllowanceSettingsUpdateRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No settings provided / invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Replace allowance settings",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllowanceSettingsUpdateRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No settings provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not implemented yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      }
+    },
+    "schemas": {
+      "AllowanceSettings": {
+        "type": "object",
+        "properties": {
+          "weeklyAllowance": {
+            "type": "number",
+            "description": "Weekly allowance amount",
+            "minimum": 0.0
+          },
+          "tasksPerWeek": {
+            "type": "integer",
+            "description": "Number of tasks to complete per week for full allowance",
+            "minimum": 1
+          },
+          "bonusPerExtraTask": {
+            "type": "number",
+            "description": "Bonus amount per extra completed task beyond tasksPerWeek",
+            "minimum": 0.0
+          },
+          "maximumExtraTasks": {
+            "type": "integer",
+            "description": "Maximum number of extra tasks eligible for bonus",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "AllowanceAccount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string",
+            "example": "account"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "currentBalance": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/AllowanceSettings"
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer"
+          }
+        },
+        "required": ["currentBalance", "currency", "settings"]
+      },
+      "AllowanceTransaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string",
+            "example": "transaction"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["credit", "debit"]
+          },
+          "type": {
+            "type": "string",
+            "description": "Transaction type",
+            "example": "ALLOWANCE"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "balanceAfter": {
+            "type": "number",
+            "description": "Balance after applying this transaction"
+          }
+        },
+        "required": ["timestamp", "amount", "direction", "type", "balanceAfter"]
+      },
+      "AllowanceTransactionCreateRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "description": "Transaction type (e.g. ALLOWANCE, BONUS, MANUAL)"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": ["amount"]
+      },
+      "AllowanceSettingsUpdateRequest": {
+        "type": "object",
+        "description": "Partial or full update for allowance account settings",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AllowanceSettings"
+          }
+        ]
+      },
+      "AllowanceAccountResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AllowanceAccount"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": ["success"]
+      },
+      "AllowanceTransactionListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllowanceTransaction"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": ["success"]
+      },
+      "AllowanceTransactionChangeResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "account": {
+            "$ref": "#/components/schemas/AllowanceAccount"
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/AllowanceTransaction"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": ["success"]
+      },
+      "ApiErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": ["success", "error"]
+      }
+    }
+  }
+}

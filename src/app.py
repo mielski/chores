@@ -13,8 +13,9 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
-from storage_factory import create_storage_managers, get_storage_info
 
+from storage_factory import create_storage_managers, get_storage_info, create_allowance_repository
+from allowance_api import allowance_bp
 
 # Constants for environment variable keys
 APP_USERNAME = 'APP_USERNAME'
@@ -26,9 +27,11 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
 
 # Initialize storage managers using factory method
 config_store, state_store = create_storage_managers(user_id="household2")
+allowance_repository = create_allowance_repository(user_id="Milou")
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv('SECRET')
@@ -39,6 +42,11 @@ except KeyError as e:
     logger.error(f"No username and/or password environment variables found, terminating application")
     exit(1)
 CORS(app)
+
+# add allowance API blueprint
+app.config["ALLOWANCE_REPOSITORY"] = allowance_repository
+app.register_blueprint(allowance_bp)
+
 
 # setup Flask-Login
 login_manager = LoginManager()
@@ -122,6 +130,13 @@ def config_page():
     """Serve the configuration page"""
     return send_from_directory('static', 'configpage.html')
 
+
+@app.route('/docs')
+@login_required
+def api_docs():
+    """Serve Swagger UI for the Household API."""
+    return render_template('swagger.html')
+
 @app.route('/<path:filename>')
 def static_files(filename):
     """Serve static files (CSS, JS, etc.)"""
@@ -195,6 +210,16 @@ def get_state():
     """Get current application state"""
     try:
         state = state_store.load()
+
+        # replace the config in the state with the config from the allowance repository for future consistency,
+        # having a central configuration for both the tasks API and allowance is work in progress.
+
+        repo = app.config["ALLOWANCE_REPOSITORY"]
+        for user_id in state.keys():
+            account = repo.get_account(user_id)
+            state[user_id]['settings'] = account["settings"]
+
+
         return jsonify({
             'success': True,
             'data': state
@@ -249,12 +274,12 @@ def update_state():
 def reset_state():
     """Reset application state to default based on current configuration"""
     try:
-        default_state = state_store.reset()
+        state_store.reset()
         
         return jsonify({
             'success': True,
             'message': 'State reset successfully',
-            'data': default_state
+            'data': get_state().json['data']
         })
             
     except Exception as e:
