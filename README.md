@@ -186,42 +186,12 @@ household-tracker/
 
 ### API Endpoints
 
-- `GET /` - Serve the main application
-- `GET /config` - Serve the configuration interface
-- `GET /api/config` - Get current app configuration
-- `POST /api/config` - Update app configuration
-- `GET /api/state` - Get current task state
-- `POST /api/state` - Update task state
-- `POST /api/reset` - Reset all tasks
-- `GET /api/health` - Health check
+See [Swagger API Documentation](src/static/openapi.json) for detailed API endpoints.
+or the /docs endpoint when running the app.
 
 ### State Management
 
-The application uses two JSON files for data persistence:
-
-**Task Configuration (`task_config.json`):**
-```json
-{
-  "users": {
-    "milou": {
-      "tasksPerWeek": 7,
-      "color": "#0ef706dc",
-      "displayName": "Milou"
-    },
-    "luca": {
-      "tasksPerWeek": 5,
-      "color": "#29b100", 
-      "displayName": "Luca"
-    }
-  },
-  "personalTasks": ["Vaatwasser", "Koken", "Boodschappen", ...],
-  "generalTasks": {
-    "count": 2,
-    "tasks": ["Huiskamer opruimen", "Takken verzorgen"]
-  },
-  "messages": ["lekker bezig! 🚀", "ga zo door! 🌟", ...]
-}
-```
+The application uses a store and repository data persistence:
 
 **Task State (`household_state.json`):**
 ```json
@@ -237,20 +207,67 @@ The application uses two JSON files for data persistence:
          "name": "Wash dishes"
          }
       ],
-      "settings": {  
-         "tasksPerWeek": 7,
-         "weeklyAllowance": 3.0,
-         "bonusPerExtraTask": 0.2,
-         "maximumExtraTasks": 4
-      },
    "Luca":  {
       ... // similar structure as Milou
    }
 }
 ```
 
-The state automatically adjusts when configuration changes. For example, if you change Milou's weekly tasks from 7 to 5, the state array will be resized accordingly.
+Note that the task state does not contain settings any more. This is now a part of the allowance API. For backward compatibility, the getstate endpoint will add the settings dynamically from the allowance API.
 
+ For example:
+```json
+{
+   "Milou": {
+      "settings": {   // dynamically added
+         "weeklyTasks": 7,
+         "weeklyAllowance": 5.0,
+         "currencySymbol": "$",
+         "themeColor": "#4CAF50"
+      },
+      "choreList": [ ... ]
+    },
+   "Luca": {
+      "settings": {...}, // dynamically added
+      "choreList": [ ... ]
+    }
+   }
+}
+```
+
+** Allowance API State: **
+
+The allowance API stores user settings, account balance, and transaction history. Note that the structure may vary based on implementation. This example is for the file storage backend. This backend uses a single JSON file to store all user data.
+   
+```json
+{
+  "Milou": {
+    "account": {
+      "id": "account#Milou",
+      "entityType": "account",
+      "currentBalance": 0.0,
+      "currency": "EUR",
+      "settings": {
+        "weeklyAllowance": 2.5,
+        "tasksPerWeek": 9,
+        "bonusPerExtraTask": 0.15,
+        "maximumExtraTasks": 5
+      },
+      "lastUpdated": "2025-12-25T21:31:31.286417+00:00",
+      "version": 17
+    },
+    "transactions": [
+      {
+        "id": "tx#Milou#2025-12-25T21:31:31.286417+00:00",
+        "entityType": "transaction",
+        "amount": 0.0,
+        "type": "initial",
+        "description": "Initial account creation",
+        "timestamp": "2025-12-25T21:31:31.286417+00:00"
+      }
+    ]
+  },
+```
 ## Azure Deployment Details
 
 ### Resources Created
