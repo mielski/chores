@@ -46,7 +46,7 @@ class ChoreManager {
     console.log(`${this.user} selected ${choreName}`);
 
     // Add chore and save through app
-    this.currentChores.push({name: choreName, date: choreDateString});
+    this.currentChores.push({ name: choreName, date: choreDateString });
 
     const state = this.app.getState();
     state[this.user].choreList = [...this.currentChores];
@@ -74,7 +74,7 @@ class ChoreManager {
   }
 
   async updateWidget() {
-    // assuming that we can rely on the widget state 
+    // assuming that we can rely on the widget state
 
     this.count = this.currentChores.length;
 
@@ -115,7 +115,7 @@ class ChoreManager {
 
           const choreDate = new Date(chore.date);
           const today = new Date();
-          const isToday = choreDate.getTime() + 3600_000 * 24 > today.valueOf()
+          const isToday = choreDate.getTime() + 3600_000 * 24 > today.valueOf();
           const isYesterday =
             choreDate.getTime() + 3600_000 * 48 > today.valueOf() && !isToday;
 
@@ -151,12 +151,12 @@ class ChoreManager {
 
 class App {
   constructor() {
-    this.previousStates = [];  // stores the last 3 previous states for undo operations
+    this.previousStates = []; // stores the last 3 previous states for undo operations
     this.state = null; // current application state
+    this.onStateChanged = null; // optional callback for state change listeners
     this.#setupChoreManagers();
     // this.#generateTaskTable();
     this.#setupEventListeners();
-
   }
 
   // Constructor related methods
@@ -165,18 +165,17 @@ class App {
   async init() {
     // any async initialization can go here
     return this.getStateFromBackend()
-    .then((state) => {
-      if (state) {
-        this.state = state;
-        this.previousStates.push(state);
-        this.updateWidgets();
-      }
-    })
-    .catch((error) => {
-      console.error("Error initializing app state:", error);
-      showError("Failed to initialize application state");
-    });
-  
+      .then((state) => {
+        if (state) {
+          this.state = state;
+          this.previousStates.push(state);
+          this.updateWidgets();
+        }
+      })
+      .catch((error) => {
+        console.error("Error initializing app state:", error);
+        showError("Failed to initialize application state");
+      });
   }
 
   // Constructor and initialization methods
@@ -195,12 +194,12 @@ class App {
     this.buttonUndo = document.getElementById("undo-tasks");
 
     buttonReset.addEventListener("click", async () => {
-      console.log('clicked button reset');
-      
+      console.log("clicked button reset");
+
       await this.resetState();
-      console.log('state reset, updating widgets');
+      console.log("state reset, updating widgets");
       console.log(this.state);
-      
+
       this.updateWidgets();
     });
 
@@ -234,17 +233,15 @@ class App {
   // General Runtime state management methods
   // --------------------------------------------------------------
 
-
   getState() {
     // return the app state
     return JSON.parse(JSON.stringify(this.state));
   }
 
-  async setState(newState, isUndo=false) {
+  async setState(newState, isUndo = false) {
     // sets new app state and saves it through the backend API
     // isUndo indicates if this is an undo operation
 
-    
     return fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -271,6 +268,13 @@ class App {
             this.previousStates.shift(); // Keep only last 3 states
           }
         }
+        if (typeof this.onStateChanged === "function") {
+          try {
+            this.onStateChanged(this.getState());
+          } catch (e) {
+            console.error("Error in onStateChanged callback", e);
+          }
+        }
       });
   }
 
@@ -282,15 +286,15 @@ class App {
       return;
     }
     console.log(this.state);
-    
+
     this.widgets.forEach((widget) => widget.updateFromAppState());
   }
 
-  async setStateAndUpdateWidgets(state, isUndo=false) {
+  async setStateAndUpdateWidgets(state, isUndo = false) {
     // set new state and update all widgets
     return this.setState(state, isUndo).then(() => this.updateWidgets());
   }
-  
+
   // Specific operations
   // --------------------------------------------------------------
 
@@ -306,10 +310,8 @@ class App {
           console.warning("Failed to reset state:", result.error);
           showError("Failed to reset state: " + result.error);
           throw new Error(result.error);
-        }
-        else {
-          return this.setState(result.data)
-            .then(() => true);
+        } else {
+          return this.setState(result.data).then(() => true);
         }
       })
       .catch((error) => {
@@ -332,7 +334,268 @@ class App {
   }
 }
 
-  // Handle end of week functionality
+// Allowance UI manager
+class AllowanceManager {
+  constructor(cardElement, app) {
+    this.card = cardElement;
+    this.userId = cardElement.dataset.user;
+    this.app = app;
+
+    this.account = null;
+    this.transactions = [];
+
+    this.elements = {
+      balance: this.card.querySelector(".allowance-card__balance"),
+      currency: this.card.querySelector(".allowance-card__currency"),
+      weeklyBase: this.card.querySelector(".allowance-card__weekly-base"),
+      weeklyBonus: this.card.querySelector(".allowance-card__weekly-bonus"),
+      weeklyTotal: this.card.querySelector(".allowance-card__weekly-total"),
+      txList: this.card.querySelector(".allowance-card__transactions-list"),
+      addButton: this.card.querySelector(".allowance-card__add-transaction"),
+      undoButton: this.card.querySelector(".allowance-card__undo-transaction"),
+    };
+
+    this.#setupEvents();
+  }
+
+  async init() {
+    await this.refreshFromServer();
+    const state = this.app.getState();
+    if (state && state[this.userId]) {
+      this.updateFromAppState(state);
+    }
+  }
+
+  #setupEvents() {
+    if (this.elements.addButton) {
+      this.elements.addButton.addEventListener("click", () => {
+        this.#openTransactionModal();
+      });
+    }
+
+    if (this.elements.undoButton) {
+      this.elements.undoButton.addEventListener("click", () => {
+        this.#undoLastTransaction();
+      });
+    }
+  }
+
+  async refreshFromServer() {
+    try {
+      const [accountRes, txRes] = await Promise.all([
+        fetch(`/api/allowance/${encodeURIComponent(this.userId)}/account`),
+        fetch(
+          `/api/allowance/${encodeURIComponent(
+            this.userId
+          )}/transactions?limit=5`
+        ),
+      ]);
+
+      const accountJson = await accountRes.json();
+      if (accountRes.ok && accountJson.success) {
+        this.account = accountJson.data;
+      }
+
+      const txJson = await txRes.json();
+      if (txRes.ok && txJson.success) {
+        this.transactions = txJson.transactions || [];
+      } else {
+        this.transactions = [];
+      }
+
+      this.#renderAccount();
+      this.#renderTransactions();
+    } catch (error) {
+      console.error("Error loading allowance data", error);
+      showError("Kon spaargegevens niet laden.");
+    }
+  }
+
+  updateFromAppState(state) {
+    const userData = state?.[this.userId];
+    if (!userData || !this.account) {
+      return;
+    }
+
+    const settings = this.account.settings || userData.settings || {};
+    const weeklyAllowance = Number(settings.weeklyAllowance || 0);
+    const tasksPerWeek = Number(settings.tasksPerWeek || 0);
+    const bonusPerExtraTask = Number(settings.bonusPerExtraTask || 0);
+    const maximumExtraTasks = Number(settings.maximumExtraTasks || 0);
+
+    const choresCompleted = Array.isArray(userData.choreList)
+      ? userData.choreList.length
+      : 0;
+
+    const extraTasksRaw = choresCompleted - tasksPerWeek;
+    const extraTasks = Math.max(0, Math.min(extraTasksRaw, maximumExtraTasks));
+    const bonus = extraTasks * bonusPerExtraTask;
+    const total = weeklyAllowance + bonus;
+
+    this.elements.weeklyBase.textContent =
+      this.#formatCurrency(weeklyAllowance);
+    this.elements.weeklyBonus.textContent = this.#formatCurrency(bonus);
+    this.elements.weeklyTotal.textContent = this.#formatCurrency(total);
+  }
+
+  #renderAccount() {
+    if (!this.account) return;
+    const balance = Number(this.account.currentBalance || 0);
+    const currency = this.account.currency || "EUR";
+
+    this.elements.balance.textContent = this.#formatCurrency(balance);
+    if (this.elements.currency) {
+      this.elements.currency.textContent = currency;
+    }
+  }
+
+  #renderTransactions() {
+    const list = this.elements.txList;
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    if (!this.transactions || this.transactions.length === 0) {
+      const li = document.createElement("li");
+      li.className = "small text-muted fst-italic";
+      li.textContent = "Nog geen transacties";
+      list.appendChild(li);
+      return;
+    }
+
+    this.transactions.forEach((tx) => {
+      const li = document.createElement("li");
+      li.className = "d-flex justify-content-between small";
+
+      const amount = Number(tx.amount || 0);
+      const directionClass =
+        amount >= 0 ? "amount-positive" : "amount-negative";
+
+      const date = tx.timestamp ? new Date(tx.timestamp) : null;
+      const displayDate = date
+        ? date.toLocaleDateString(window.navigator.language, {
+            day: "numeric",
+            month: "short",
+          })
+        : "";
+
+      const description = tx.description || tx.type || "Transactie";
+
+      li.innerHTML = `
+        <span>
+          <span class="${directionClass}">${this.#formatCurrency(amount)}</span>
+           b7
+          <span>${description}</span>
+        </span>
+        <span class="text-muted">
+          <time datetime="${tx.timestamp || ""}">${displayDate}</time>
+        </span>
+      `;
+
+      list.appendChild(li);
+    });
+  }
+
+  #openTransactionModal() {
+    const modalEl = document.getElementById("transactionModal");
+    if (!modalEl) return;
+
+    const userInput = document.getElementById("transaction-user-id");
+    const amountInput = document.getElementById("transaction-amount");
+    const typeSelect = document.getElementById("transaction-type");
+    const descInput = document.getElementById("transaction-description");
+
+    userInput.value = this.userId;
+    amountInput.value = "";
+    typeSelect.value = "MANUAL";
+    descInput.value = "";
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+
+  async #undoLastTransaction() {
+    try {
+      const res = await fetch(
+        `/api/allowance/${encodeURIComponent(this.userId)}/transactions/last`,
+        { method: "DELETE" }
+      );
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        showWarning(
+          json.error || "Kon laatste transactie niet ongedaan maken."
+        );
+        return;
+      }
+
+      this.account = json.account;
+      await this.refreshFromServer();
+      showSuccess("Laatste transactie is ongedaan gemaakt.");
+    } catch (e) {
+      console.error("Error undoing last transaction", e);
+      showError("Er ging iets mis bij het ongedaan maken.");
+    }
+  }
+
+  async saveTransactionFromModal() {
+    const userInput = document.getElementById("transaction-user-id");
+    const amountInput = document.getElementById("transaction-amount");
+    const typeSelect = document.getElementById("transaction-type");
+    const descInput = document.getElementById("transaction-description");
+
+    const amount = Number(amountInput.value);
+    if (!userInput.value || Number.isNaN(amount) || amount === 0) {
+      showWarning("Vul een bedrag in om op te slaan.");
+      return;
+    }
+
+    const payload = {
+      amount,
+      type: typeSelect.value,
+      description: descInput.value || null,
+    };
+
+    try {
+      const res = await fetch(
+        `/api/allowance/${encodeURIComponent(this.userId)}/transactions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        showError(json.error || "Kon transactie niet opslaan.");
+        return;
+      }
+
+      this.account = json.account;
+      await this.refreshFromServer();
+      showSuccess("Transactie opgeslagen.");
+    } catch (e) {
+      console.error("Error saving transaction", e);
+      showError("Er ging iets mis bij het opslaan van de transactie.");
+    }
+  }
+
+  #formatCurrency(value) {
+    const number = Number(value || 0);
+    try {
+      return new Intl.NumberFormat(window.navigator.language, {
+        style: "currency",
+        currency: this.account?.currency || "EUR",
+        minimumFractionDigits: 2,
+      }).format(number);
+    } catch {
+      return `€ ${number.toFixed(2)}`;
+    }
+  }
+}
+
+// Handle end of week functionality
 async function handleEndWeek() {
   try {
     // Here you can implement week ending logic like:
@@ -349,8 +612,6 @@ async function handleEndWeek() {
     showError("Failed to end week. Please try again.", "Error");
   }
 }
-
-
 
 // Confetti utility functions
 function createConfetti(options = {}) {
@@ -483,7 +744,6 @@ function showWarning(message, title = null) {
   showToast(message, "warning", title);
 }
 
-
 function showInfo(message, title = null) {
   showToast(message, "info", title);
 }
@@ -493,3 +753,53 @@ const app = new App();
 await app.init();
 
 window.globalThis.app = app; // expose app for debugging purposes
+
+// Initialize allowance managers
+const allowanceCards = Array.from(
+  document.querySelectorAll(".allowance-card[data-user]")
+);
+
+const allowanceManagers = allowanceCards.map(
+  (card) => new AllowanceManager(card, app)
+);
+
+window.globalThis.allowanceManagers = allowanceManagers;
+
+for (const manager of allowanceManagers) {
+  await manager.init();
+}
+
+// Update weekly allowance/bonus whenever app state changes
+app.onStateChanged = (state) => {
+  allowanceManagers.forEach((m) => m.updateFromAppState(state));
+};
+
+// Wire up toolbar process button (design-only for now)
+const processButton = document.querySelector(".allowance-toolbar__process");
+if (processButton) {
+  processButton.addEventListener("click", () => {
+    showInfo("Week verwerken komt binnenkort beschikbaar.");
+  });
+}
+
+// Wire up modal save button to active allowance manager
+const saveTxButton = document.getElementById("save-transaction");
+if (saveTxButton) {
+  saveTxButton.addEventListener("click", async () => {
+    const userInput = document.getElementById("transaction-user-id");
+    const userId = userInput?.value;
+    const manager = allowanceManagers.find((m) => m.userId === userId);
+    if (!manager) {
+      showError("Geen gebruiker gevonden voor deze transactie.");
+      return;
+    }
+    await manager.saveTransactionFromModal();
+
+    const modalEl = document.getElementById("transactionModal");
+    if (modalEl) {
+      const modal =
+        bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.hide();
+    }
+  });
+}
