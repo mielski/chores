@@ -5,6 +5,7 @@ A web application for tracking household tasks and allowances for multiple famil
 ## Features
 
 - ✅ Track tasks for multiple family members with configurable weekly goals
+- 🪙 Track savings and weekly allowance
 - 📊 Progress bars showing task completion
 - 💾 Persistent state shared across all devices on the network
 - 📱 Mobile-friendly responsive design
@@ -71,7 +72,7 @@ The application consists of:
 
    ```
    
-### Option 1: Local Development with Docker
+### Option 2: Local Development with Docker
 
 1. **Prerequisites**
 
@@ -104,7 +105,7 @@ The application consists of:
    - Click the ⚙️ (settings) button to configure tasks and users
    - The app will be accessible from any device on your local network using your computer's IP address
 
-### Option 2: Deploy to Azure Container Apps
+### Option 3: Deploy to Azure Container Apps
 
 In this option, the app will be deployed to Azure Container Apps and the image will be pushed to
 the public docker hub registry.
@@ -154,32 +155,33 @@ To access the app from other devices on your local network:
 
 ### Project Structure
 
-```
+```text
 household-tracker/
-├── Dockerfile             # Container configuration
-├── azure.yaml             # Azure deployment configuration
+├── Dockerfile               # Container configuration
+├── azure.yaml               # Azure deployment configuration
 ├── src/
-│   ├── app.py              # Flask application code
-│   ├── statemanager.py     # State and configuration management
-│   ├── requirements.txt    # Python dependencies
-│   ├── task_config.json    # Configuration file (auto-generated)
-│   ├── household_state.json # State file (auto-generated)
+│   ├── app.py               # Flask application code
+│   ├── cosmosdb_manager.py  # manager for Cosmos DB storage
+│   ├── storage_factory.py   # Factory for storage backends (file or Cosmos DB)
+│   ├── jsonfile_manager.py  # manager for JSON file storage
+│   ├── aklowance_api.py     # Flask blueprint for allowance API
+│   ├── requirements.txt     # Python dependencies
 │   ├── static/
-│   │   ├── index.html      # Main HTML file
-│   │   ├── config.html     # Configuration interface
-│   │   ├── script.js       # Frontend JavaScript (dynamic)
-│   │   ├── config.js       # Configuration interface JavaScript
-│   │   └── style.css       # CSS styles (with dynamic colors)
+│   │   ├── index.html       # Main HTML file
+│   │   ├── configpage.html  # Configuration interface
+│   │   ├── configpage.js    # Configuration interface
+│   │   ├── script.js        # Frontend JavaScript (dynamic)
+│   │   ├── config.js        # Configuration interface JavaScript
+│   │   └── style.css        # CSS styles (with dynamic colors)
 │   └── templates/
-│       └── login.html      # HTML template for login page
-├── .dockerignore           # Docker ignore file
+│       └── login.html       # HTML template for login page
+├── .dockerignore            # Docker ignore file
 ├── infra/
-│   ├── main.bicep         # Azure infrastructure as code
-│   └── main.parameters.json
-├── deploy-local.*         # Local deployment scripts
-├── deploy-infra.sh        # Azure infrastructure deployment script
-├── build-and-push.sh      # Docker build and push script, use to push new version to Docker Hub and 
-                             redeploy
+│   ├── main.bicep           # Azure infrastructure as code
+│   └── main.parameters.json # Azure infrastructure parameters
+├── deploy-local.*           # Local deployment scripts
+├── deploy-infra.sh          # Azure infrastructure deployment script
+└── build-and-push.sh        # Build and push image to Docker Hub and redeploy
 ```
 
 ### API Endpoints

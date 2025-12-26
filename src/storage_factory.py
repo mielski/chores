@@ -55,7 +55,9 @@ class AllowanceRepositoryProtocol(Protocol):
     """
 
     def get_account(self, user_id: str) -> Dict[str, Any]:
-        """Return the allowance account document for a user."""
+        """Return the allowance account document for a user.
+        
+        If no account exists, return a default account structure."""
         ...
 
     def get_recent_transactions(self, user_id: str, limit: int = 20) -> List[Dict[str, Any]]:
@@ -70,6 +72,12 @@ class AllowanceRepositoryProtocol(Protocol):
         description: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Create a new transaction and update the account.
+
+        parameters:
+            user_id: User identifier
+            amount: Transaction amount (positive or negative)
+            tx_type: Type/category of transaction
+            description: Optional description of the transaction
 
         Returns a tuple of (updated_account, created_transaction).
         """
