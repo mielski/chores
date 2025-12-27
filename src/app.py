@@ -294,6 +294,50 @@ def reset_state():
             'success': False,
             'error': str(e)
         }), 500
+    
+@app.route('/api/end-week', methods=['POST'])
+def end_week():
+    """ends the week and performs necessary state updates:
+    - resets weekly tasks
+    - updates allowance balances with weekly allowance amounts + bonuses
+    """
+
+    repo = app.config["ALLOWANCE_REPOSITORY"]
+    if not repo:
+        return jsonify({
+            'success': False,
+            'error': 'Allowance repository not configured'
+        }), 500
+    
+    state = state_store.load()
+    for user_id, user_state in state.items():
+        account = repo.get_account(user_id)
+        
+        # get weekly allowance and bonus settings
+        weekly_allowance = float(account["settings"].get("weeklyAllowance", 0))
+        bonus_per_extra_task = account["settings"].get("bonusPerExtraTask", 0)
+        task = account["settings"].get("tasksPerWeek", 1)
+        maximum_extra_tasks = account["settings"].get("maximumExtraTasks", 0)
+
+        tasks_completed = len(user_state.get("choreList", []))
+
+        extra_tasks_completed = min(max(0, tasks_completed - task), maximum_extra_tasks)
+
+        repo.add_transaction(
+            user_id=user_id,
+            amount=weekly_allowance,
+            tx_type="ALLOWANCE")
+        
+        if extra_tasks_completed:
+            repo.add_transaction(
+                user_id=user_id,
+                amount=extra_tasks_completed * float*bonus_per_extra_task
+                tx_type="BONUS"
+            )
+    
+    # reset task state when done
+    state_store.reset()
+
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
