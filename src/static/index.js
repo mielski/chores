@@ -613,6 +613,12 @@ class AllowanceManager {
   }
 }
 
+// Initialize the application
+const app = new App();
+await app.init();
+
+window.globalThis.app = app; // expose app for debugging purposes
+
 // Initialize allowance managers
 const allowanceCards = Array.from(
   document.querySelectorAll(".allowance-card[data-user]")
@@ -649,7 +655,11 @@ const viewDropdownButton = document.getElementById("allowance-view-dropdown");
 const viewItems = document.querySelectorAll("[data-allowance-view]");
 
 viewItems.forEach((item) => {
-  item.addEventListener("click", () => {
+  item.addEventListener("click", async () => {
+    const ok = await verifyPasscodeWithPrompt();
+    if (!ok) {
+      return;
+    }
     const view = item.dataset.allowanceView;
     if (viewDropdownButton) {
       viewDropdownButton.textContent = item.textContent.trim();
@@ -785,9 +795,5 @@ update all from reset button -> set all buttons and update both progress bars se
 update all from data load -> set all buttons and update both progress bars separately
 */
 
-// Initialize the application
-const app = new App();
-await app.init();
 
-window.globalThis.app = app; // expose app for debugging purposes
 
