@@ -399,7 +399,7 @@ class CosmosAllowanceRepository:
         If no transactions exist, an empty dict is returned for deleted_transaction.
         """
         account = self.get_account(user_id)
-        transaction = self.container.query_items(
+        transactions = self.container.query_items(
             query=(
                 "SELECT TOP 1 * FROM c "
                 "WHERE c.entityType = 'transaction' AND c.userId = @userId "
@@ -408,10 +408,11 @@ class CosmosAllowanceRepository:
             parameters=[{"name": "@userId", "value": user_id}],
             enable_cross_partition_query=False,
         )
-        if not transaction:
+        if not transactions:
             return account, {}
 
         # get the transaction value
+        transaction = transactions.next()
         amount = transaction['amount']
         old_balance = float(account.get("currentBalance", 0.0))
         new_balance = old_balance - float(amount)
