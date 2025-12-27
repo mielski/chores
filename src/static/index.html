@@ -214,8 +214,54 @@
         >
           <div class="row justify-content-center">
             <div class="col-lg-10">
-              <!-- Compact toolbar with icon-only button -->
-              <div class="allowance-toolbar d-flex justify-content-end mb-3">
+              <!-- Toolbar with view filter and process button -->
+              <div
+                class="allowance-toolbar d-flex justify-content-between justify-content-md-end align-items-center mb-3 gap-2"
+              >
+                <div class="dropdown me-auto me-md-2">
+                  <button
+                    class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                    type="button"
+                    id="allowance-view-dropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    Weergave: Alle
+                  </button>
+                  <ul
+                    class="dropdown-menu dropdown-menu-end"
+                    aria-labelledby="allowance-view-dropdown"
+                  >
+                    <li>
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        data-allowance-view="all"
+                      >
+                        Alle
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        data-allowance-view="Milou"
+                      >
+                        Alleen Milou
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        class="dropdown-item"
+                        type="button"
+                        data-allowance-view="Luca"
+                      >
+                        Alleen Luca
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+
                 <button
                   type="button"
                   class="btn btn-sm btn-primary allowance-toolbar__process"
@@ -454,6 +500,58 @@
           ></button>
         </div>
         <div class="toast-body" id="toast-message">Default message</div>
+      </div>
+    </div>
+    <!-- Passcode Modal -->
+    <div
+      class="modal fade"
+      id="passcodeModal"
+      tabindex="-1"
+      aria-labelledby="passcodeModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="passcodeModalLabel">
+              Bevestig met toegangscode
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Sluiten"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="passcode-input" class="form-label"
+                >Voer toegangscode in</label
+              >
+              <input
+                type="password"
+                class="form-control"
+                id="passcode-input"
+                autocomplete="off"
+              />
+              <div id="passcode-error" class="form-text text-danger d-none">
+                Onjuiste code, probeer het opnieuw.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Annuleren
+            </button>
+            <button type="button" class="btn btn-primary" id="passcode-confirm">
+              Bevestigen
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     <!-- Transaction Modal -->

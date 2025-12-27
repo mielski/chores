@@ -20,6 +20,7 @@ from allowance_api import allowance_bp
 # Constants for environment variable keys
 APP_USERNAME = 'APP_USERNAME'
 APP_PASSWORD = 'APP_PASSWORD'
+ACTION_PASSCODE = 'ACTION_PASSCODE'
 
 # Load environment variables from .env file
 load_dotenv()
@@ -41,6 +42,11 @@ try:
 except KeyError as e:
     logger.error(f"No username and/or password environment variables found, terminating application")
     exit(1)
+
+# Optional extra passcode for sensitive actions
+app.config[ACTION_PASSCODE] = os.getenv(ACTION_PASSCODE)
+if not app.config[ACTION_PASSCODE]:
+    logger.info("No ACTION_PASSCODE configured; passcode verification endpoint will always succeed.")
 CORS(app)
 
 # add allowance API blueprint
@@ -303,6 +309,44 @@ def get_version():
     return jsonify({
         'version': APP_VERSION
     })
+
+
+@app.route('/api/verify-passcode', methods=['POST'])
+@login_required
+def verify_passcode():
+    """Verify a simple action passcode against an environment variable.
+
+    The expected JSON body is: {"code": "..."}.
+
+    If ACTION_PASSCODE is not configured in the environment, verification
+    always succeeds so the feature can be considered disabled.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        provided_code = str(data.get('code', ''))
+
+        configured_code = app.config.get(ACTION_PASSCODE)
+
+        # If no passcode configured, treat verification as always successful
+        if not configured_code:
+            return jsonify({
+                'success': True,
+                'valid': True,
+                'configured': False
+            }), 200
+
+        is_valid = provided_code == configured_code
+        return jsonify({
+            'success': True,
+            'valid': is_valid,
+            'configured': True
+        }), 200
+    except Exception as e:
+        logger.error(f"Error verifying passcode: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to verify passcode'
+        }), 500
 
 @app.route('/api/storage', methods=['GET'])
 @login_required  # Add authentication requirement

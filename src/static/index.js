@@ -1,6 +1,38 @@
-// project configuration constants
-"use strict";
+import { showSuccess, showError, showWarning, showInfo } from "./ui-toast.js";
+import { verifyPasscodeWithPrompt } from "./ui-security.js";
 
+function getDisplayDate(date) {
+  // Format a date into a string using the following logic:
+  //
+  // - If today, return "vandaag"
+  // - If yesterday, return "gisteren"
+  // - Else, return in "DD MMM" format according to user's locale
+
+  // first take the beginning of day
+  const dateBeginningDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  // then compare to whether day is in today and yesterday 
+  const today = new Date();
+  const isToday = dateBeginningDay.getTime() + 3600_000 * 24 > today.valueOf();
+  if (isToday) return "vandaag"
+
+  const isYesterday =
+    dateBeginningDay.getTime() + 3600_000 * 48 > today.valueOf() && !isToday;
+
+  if (isYesterday) return "gisteren"
+
+  // else return formatted date
+  return dateBeginningDay.toLocaleDateString(
+    window.navigator.language,
+    {
+      day: "numeric",
+      month: "short",
+    }
+  );
+
+
+
+}
 class ChoreManager {
   constructor(cardElement, app) {
     this.card = cardElement; // card element is the container for the task information of this user
@@ -114,24 +146,7 @@ class ChoreManager {
             "chore border-start border-success border-3 ps-2 mb-2 shadow-sm p-2";
 
           const choreDate = new Date(chore.date);
-          const today = new Date();
-          const isToday = choreDate.getTime() + 3600_000 * 24 > today.valueOf();
-          const isYesterday =
-            choreDate.getTime() + 3600_000 * 48 > today.valueOf() && !isToday;
-
-          let displayDate = choreDate.toLocaleDateString(
-            window.navigator.language,
-            {
-              day: "numeric",
-              month: "short",
-            }
-          );
-
-          if (isToday) {
-            displayDate = "vandaag";
-          } else if (isYesterday) {
-            displayDate = "gisteren";
-          }
+          const displayDate = getDisplayDate(choreDate);
 
           choreElement.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
@@ -188,7 +203,8 @@ class App {
   }
 
   #setupEventListeners() {
-    // event for reset button
+
+    // events for buttons in the task toolbar
     const buttonReset = document.getElementById("reset-tasks");
     const buttonEndWeek = document.getElementById("end-week-tasks");
     this.buttonUndo = document.getElementById("undo-tasks");
@@ -336,6 +352,7 @@ class App {
 
 // Allowance UI manager
 class AllowanceManager {
+  // Manages allowance card for a single user
   constructor(cardElement, app) {
     this.card = cardElement;
     this.userId = cardElement.dataset.user;
@@ -367,20 +384,26 @@ class AllowanceManager {
   }
 
   #setupEvents() {
-    if (this.elements.addButton) {
-      this.elements.addButton.addEventListener("click", () => {
-        this.#openTransactionModal();
-      });
-    }
+    // Setup event listeners for add and undo buttons
+    this.elements.addButton.addEventListener("click", async () => {
+      const ok = await verifyPasscodeWithPrompt();
+      if (!ok) {
+        return;
+      }
+      this.#openTransactionModal();
+    });
 
-    if (this.elements.undoButton) {
-      this.elements.undoButton.addEventListener("click", () => {
-        this.#undoLastTransaction();
-      });
-    }
+    this.elements.undoButton.addEventListener("click", async () => {
+      const ok = await verifyPasscodeWithPrompt();
+      if (!ok) {
+        return;
+      }
+      await this.#undoLastTransaction();
+    });
   }
 
   async refreshFromServer() {
+    // Fetch latest account and transactions from server and update UI
     try {
       const [accountRes, txRes] = await Promise.all([
         fetch(`/api/allowance/${encodeURIComponent(this.userId)}/account`),
@@ -472,19 +495,14 @@ class AllowanceManager {
         amount >= 0 ? "amount-positive" : "amount-negative";
 
       const date = tx.timestamp ? new Date(tx.timestamp) : null;
-      const displayDate = date
-        ? date.toLocaleDateString(window.navigator.language, {
-            day: "numeric",
-            month: "short",
-          })
-        : "";
+      const displayDate = date ? getDisplayDate(date) : "";
 
       const description = tx.description || tx.type || "Transactie";
 
       li.innerHTML = `
         <span>
           <span class="${directionClass}">${this.#formatCurrency(amount)}</span>
-           b7
+          &middot;
           <span>${description}</span>
         </span>
         <span class="text-muted">
@@ -595,6 +613,83 @@ class AllowanceManager {
   }
 }
 
+// Initialize allowance managers
+const allowanceCards = Array.from(
+  document.querySelectorAll(".allowance-card[data-user]")
+);
+
+const allowanceManagers = allowanceCards.map(
+  (card) => new AllowanceManager(card, app)
+);
+
+window.globalThis.allowanceManagers = allowanceManagers;
+
+for (const manager of allowanceManagers) {
+  await manager.init();
+}
+
+// Update weekly allowance/bonus whenever app state changes
+app.onStateChanged = (state) => {
+  allowanceManagers.forEach((m) => m.updateFromAppState(state));
+};
+
+// Allowance view filter (Alle / Milou / Luca)
+function applyAllowanceViewFilter(view) {
+  allowanceCards.forEach((card) => {
+    const user = card.dataset.user;
+    if (!view || view === "all" || user === view) {
+      card.style.display = "";
+    } else {
+      card.style.display = "none";
+    }
+  });
+}
+
+const viewDropdownButton = document.getElementById("allowance-view-dropdown");
+const viewItems = document.querySelectorAll("[data-allowance-view]");
+
+viewItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    const view = item.dataset.allowanceView;
+    if (viewDropdownButton) {
+      viewDropdownButton.textContent = item.textContent.trim();
+    }
+    applyAllowanceViewFilter(view);
+  });
+});
+
+// Default view: show all
+applyAllowanceViewFilter("all");
+
+// Wire up toolbar process button (design-only for now)
+const processButton = document.querySelector(".allowance-toolbar__process");
+if (processButton) {
+  processButton.addEventListener("click", () => {
+    showInfo("Week verwerken komt binnenkort beschikbaar.");
+  });
+}
+
+// Wire up modal save button to active allowance manager
+const saveTxButton = document.getElementById("save-transaction");
+if (saveTxButton) {
+  saveTxButton.addEventListener("click", async () => {
+    const userInput = document.getElementById("transaction-user-id");
+    const userId = userInput?.value;
+    const manager = allowanceManagers.find((m) => m.userId === userId);
+    if (!manager) {
+      showError("Geen gebruiker gevonden voor deze transactie.");
+      return;
+    }
+    await manager.saveTransactionFromModal();
+
+    const modalEl = document.getElementById("transactionModal");
+    if (modalEl) {
+      const modal =
+        bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.hide();
+    }
+  });
+}
 // Handle end of week functionality
 async function handleEndWeek() {
   try {
@@ -690,116 +785,9 @@ update all from reset button -> set all buttons and update both progress bars se
 update all from data load -> set all buttons and update both progress bars separately
 */
 
-// Toast notification utilities
-function showToast(message, type = "info", title = null, duration = 5000) {
-  const toast = document.getElementById("notification-toast");
-  const toastIcon = document.getElementById("toast-icon");
-  const toastTitle = document.getElementById("toast-title");
-  const toastMessage = document.getElementById("toast-message");
-
-  // Configure based on type
-  const configs = {
-    success: {
-      icon: "fa-check-circle",
-      color: "text-success",
-      title: "Success",
-    },
-    error: {
-      icon: "fa-exclamation-circle",
-      color: "text-danger",
-      title: "Error",
-    },
-    warning: {
-      icon: "fa-exclamation-triangle",
-      color: "text-warning",
-      title: "Warning",
-    },
-    info: { icon: "fa-info-circle", color: "text-info", title: "Info" },
-  };
-
-  const config = configs[type] || configs.info;
-
-  // Update toast content
-  toastIcon.className = `fas ${config.icon} ${config.color} me-2`;
-  toastTitle.textContent = title || config.title;
-  toastMessage.textContent = message;
-
-  // Show toast
-  const bsToast = new bootstrap.Toast(toast, {
-    delay: duration,
-  });
-  bsToast.show();
-}
-
-// Convenience functions
-function showSuccess(message, title = null) {
-  showToast(message, "success", title);
-}
-
-function showError(message, title = null) {
-  showToast(message, "error", title);
-}
-
-function showWarning(message, title = null) {
-  showToast(message, "warning", title);
-}
-
-function showInfo(message, title = null) {
-  showToast(message, "info", title);
-}
-
 // Initialize the application
 const app = new App();
 await app.init();
 
 window.globalThis.app = app; // expose app for debugging purposes
 
-// Initialize allowance managers
-const allowanceCards = Array.from(
-  document.querySelectorAll(".allowance-card[data-user]")
-);
-
-const allowanceManagers = allowanceCards.map(
-  (card) => new AllowanceManager(card, app)
-);
-
-window.globalThis.allowanceManagers = allowanceManagers;
-
-for (const manager of allowanceManagers) {
-  await manager.init();
-}
-
-// Update weekly allowance/bonus whenever app state changes
-app.onStateChanged = (state) => {
-  allowanceManagers.forEach((m) => m.updateFromAppState(state));
-};
-
-// Wire up toolbar process button (design-only for now)
-const processButton = document.querySelector(".allowance-toolbar__process");
-if (processButton) {
-  processButton.addEventListener("click", () => {
-    showInfo("Week verwerken komt binnenkort beschikbaar.");
-  });
-}
-
-// Wire up modal save button to active allowance manager
-const saveTxButton = document.getElementById("save-transaction");
-if (saveTxButton) {
-  saveTxButton.addEventListener("click", async () => {
-    const userInput = document.getElementById("transaction-user-id");
-    const userId = userInput?.value;
-    const manager = allowanceManagers.find((m) => m.userId === userId);
-    if (!manager) {
-      showError("Geen gebruiker gevonden voor deze transactie.");
-      return;
-    }
-    await manager.saveTransactionFromModal();
-
-    const modalEl = document.getElementById("transactionModal");
-    if (modalEl) {
-      const modal =
-        bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-      modal.hide();
-    }
-  });
-}
