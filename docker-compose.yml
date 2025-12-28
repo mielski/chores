@@ -12,6 +12,7 @@ services:
       - SECRET=${SECRET}
       - APP_USERNAME=${APP_USERNAME}
       - APP_PASSWORD=${APP_PASSWORD}
+      - APP_ACTION_PASSCODE=${APP_ACTION_PASSCODE}
       - PORT=8080
       - STATE_FILE=/app/data/household_state.json
       # Cosmos DB settings (optional - comment out to use file-based storage)

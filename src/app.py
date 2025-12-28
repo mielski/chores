@@ -20,10 +20,13 @@ from allowance_api import allowance_bp
 # Constants for environment variable keys
 APP_USERNAME = 'APP_USERNAME'
 APP_PASSWORD = 'APP_PASSWORD'
-ACTION_PASSCODE = 'ACTION_PASSCODE'
+APP_ACTION_PASSCODE = 'APP_ACTION_PASSCODE'
 
 # Load environment variables from .env file
 load_dotenv()
+
+
+APP_VERSION = os.getenv('APP_VERSION', 'dev')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +37,11 @@ logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(l
 config_store, state_store = create_storage_managers(user_id="household2")
 allowance_repository = create_allowance_repository(user_id="Milou")
 
+# Initialize app & secrets
 app = Flask(__name__)
+# Configuration
+
+
 app.config["SECRET_KEY"] = os.getenv('SECRET')
 try:
     app.config[APP_USERNAME] = os.environ[APP_USERNAME]
@@ -44,8 +51,8 @@ except KeyError as e:
     exit(1)
 
 # Optional extra passcode for sensitive actions
-app.config[ACTION_PASSCODE] = os.getenv(ACTION_PASSCODE)
-if not app.config[ACTION_PASSCODE]:
+app.config[APP_ACTION_PASSCODE] = os.getenv(APP_ACTION_PASSCODE)
+if not app.config[APP_ACTION_PASSCODE]:
     logger.info("No ACTION_PASSCODE configured; passcode verification endpoint will always succeed.")
 CORS(app)
 
@@ -82,12 +89,6 @@ def load_user(user_id):
     if user_id == app.config[APP_USERNAME]:
         return User(id=user_id)
     return None
-
-# Configuration
-STATE_FILE = os.getenv('STATE_FILE', 'household_state_v2.json')
-PORT = int(os.getenv('PORT', 8080))
-DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
-APP_VERSION = os.getenv('APP_VERSION', 'dev')
 
 
 class LoginForm(FlaskForm):
@@ -315,28 +316,34 @@ def end_week():
         
         # get weekly allowance and bonus settings
         weekly_allowance = float(account["settings"].get("weeklyAllowance", 0))
-        bonus_per_extra_task = account["settings"].get("bonusPerExtraTask", 0)
-        task = account["settings"].get("tasksPerWeek", 1)
-        maximum_extra_tasks = account["settings"].get("maximumExtraTasks", 0)
+        bonus_per_extra_task = float(account["settings"].get("bonusPerExtraTask", 0))
+        tasks_per_week = int(account["settings"].get("tasksPerWeek", 1))
+        maximum_extra_tasks = int(account["settings"].get("maximumExtraTasks", 0))
 
-        tasks_completed = len(user_state.get("choreList", []))
-
-        extra_tasks_completed = min(max(0, tasks_completed - task), maximum_extra_tasks)
-
+        # add weekly allowance transaction
         repo.add_transaction(
             user_id=user_id,
             amount=weekly_allowance,
+            description="zakgeld",
             tx_type="ALLOWANCE")
         
+        # calculate and add bonus for extra tasks
+        tasks_completed = len(user_state.get("choreList", []))
+        extra_tasks_completed = min(max(0, tasks_completed - tasks_per_week), maximum_extra_tasks)
         if extra_tasks_completed:
             repo.add_transaction(
                 user_id=user_id,
-                amount=extra_tasks_completed * float*bonus_per_extra_task
+                amount=extra_tasks_completed * bonus_per_extra_task,
+                description="bonus voor extra taakjes",
                 tx_type="BONUS"
             )
     
     # reset task state when done
     state_store.reset()
+    return jsonify({
+        'success': True,
+        'message': 'Week ended successfully. State reset and allowances updated.'
+    }), 200
 
 
 @app.route('/api/health', methods=['GET'])
@@ -369,7 +376,7 @@ def verify_passcode():
         data = request.get_json(silent=True) or {}
         provided_code = str(data.get('code', ''))
 
-        configured_code = app.config.get(ACTION_PASSCODE)
+        configured_code = app.config.get(APP_ACTION_PASSCODE)
 
         # If no passcode configured, treat verification as always successful
         if not configured_code:
@@ -407,6 +414,10 @@ if __name__ == '__main__':
     # Initialize state file on startup
     config_store._init_file()
     state_store._init_file()
+
+    STATE_FILE = os.getenv('STATE_FILE', 'household_state_v2.json')
+    PORT = int(os.getenv('PORT', 8080))
+    DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
     logger.info(f"Starting Flask app on port {PORT}")
     logger.info(f"Debug mode: {DEBUG}")

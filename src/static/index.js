@@ -226,6 +226,32 @@ class App {
     this.buttonUndo.addEventListener("click", () => {
       this.undoLastChange();
     });
+
+    const processButton = document.querySelector(".allowance-toolbar__process");
+    processButton.addEventListener("click", async () => {
+      return fetch("/api/end-week", {
+        method: "POST"
+      })
+      .then((response) => response.json())
+      .then(async (result) => {
+        if (!result.success) {
+          console.warn("Failed to process week:", result.error);
+          showError("Failed to process week: " + result.error);
+          return;
+        }
+        showSuccess("Week succesvol verwerkt!", "Weekverwerking");
+        this.state = await this.getStateFromBackend();
+        this.previousStates = [this.state];
+        this.updateWidgets();
+        allowanceManagers.forEach((m) => m.refreshFromServer());
+        
+      })
+      .catch((error) => {
+        console.error("Error processing week:", error);
+        showError("Error processing week:", error);
+      });
+    
+    });
   }
 
   // Updates app state from the backend
@@ -435,6 +461,7 @@ class AllowanceManager {
   }
 
   updateFromAppState(state) {
+    console.debug("Updating allowance from app state", state);
     const userData = state?.[this.userId];
     if (!userData || !this.account) {
       return;
@@ -567,7 +594,6 @@ class AllowanceManager {
       showWarning("Vul een bedrag in om op te slaan.");
       return;
     }
-
     const payload = {
       amount,
       type: typeSelect.value,
@@ -671,13 +697,6 @@ viewItems.forEach((item) => {
 // Default view: show all
 applyAllowanceViewFilter("all");
 
-// Wire up toolbar process button (design-only for now)
-const processButton = document.querySelector(".allowance-toolbar__process");
-if (processButton) {
-  processButton.addEventListener("click", () => {
-    showInfo("Week verwerken komt binnenkort beschikbaar.");
-  });
-}
 
 // Wire up modal save button to active allowance manager
 const saveTxButton = document.getElementById("save-transaction");
@@ -785,15 +804,4 @@ function celebrationBurst() {
     });
   }, 500);
 }
-
-/*
-Design overview, what kind of operations do I have
-
-update single process bar from a button update
-
-update all from reset button -> set all buttons and update both progress bars separately
-update all from data load -> set all buttons and update both progress bars separately
-*/
-
-
 
