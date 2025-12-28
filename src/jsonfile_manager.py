@@ -58,27 +58,7 @@ class BaseJsonStore:
         """Reset content to default values"""
         return self.save(self.get_default_content())
 
-
-class FileConfigStore(BaseJsonStore):
-    """
-    FileStore for the app configuration.
-
-    Configuration structure:
-    users - dict of user_id to user config (name, tasksPerWeek)
-    generalTasks - list of general tasks accomplished once over users
-    personalTasks - list of personal tasks accomplished once per user
-    """
-
-    _file_name = 'task_config.json'
-
-    def get_default_content(self) -> dict:
-        return {
-        "users": {},
-        "generalTasks": [],
-        "personalTasks": [],
-        "messages": []
-    }
-    
+ 
 
 class FileStateStore(BaseJsonStore):
     """
@@ -312,5 +292,4 @@ def create_file_allowance_repository() -> FileAllowanceRepository:
 
 
 # Initialize stores with new names
-config_store = FileConfigStore()
 state_store = FileStateStore()

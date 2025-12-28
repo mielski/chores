@@ -14,7 +14,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
 
-from storage_factory import create_storage_managers, get_storage_info, create_allowance_repository
+from storage_factory import create_state_store, get_storage_info, create_allowance_repository
 from allowance_api import allowance_bp
 
 # Constants for environment variable keys
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
 
 # Initialize storage managers using factory method
-config_store, state_store = create_storage_managers(user_id="household2")
+state_store = create_state_store(user_id="household2")
 allowance_repository = create_allowance_repository(user_id="Milou")
 
 # Initialize app & secrets
@@ -148,69 +148,6 @@ def api_docs():
 def static_files(filename):
     """Serve static files (CSS, JS, etc.)"""
     return send_from_directory('static', filename)
-
-# API Endpoints
-@app.route('/api/config', methods=['GET'])
-@login_required
-def get_config():
-    """Get current task configuration"""
-    try:
-        config = config_store.load()
-        return jsonify({
-            'success': True,
-            'data': config
-        })
-    except Exception as e:
-        logger.error(f"Error getting config: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/api/config', methods=['POST'])
-@login_required
-def update_config():
-    """Update task configuration"""
-    try:
-        new_config = request.get_json()
-        
-        if not new_config:
-            return jsonify({
-                'success': False,
-                'error': 'No data provided'
-            }), 400
-        
-        # Validate config structure (basic validation)
-        required_keys = ['users', 'generalTasks', 'personalTasks']
-        if not all(key in new_config for key in required_keys):
-            return jsonify({
-                'success': False,
-                'error': f'Missing required keys. Expected: {required_keys}'
-            }), 400
-        
-        # Save new configuration
-        success = config_store.save(new_config)
-        
-        if success:
-            # Reset task state in case the number of tasks/users changed and state is now inconsistent
-            state_store.reset()
-            
-            return jsonify({
-                'success': True,
-                'message': 'Configuration updated successfully'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to save configuration'
-            }), 500
-
-    except Exception as e:
-        logger.error(f"Error updating config: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
 
 @app.route('/api/state', methods=['GET'])
 def get_state():
@@ -412,7 +349,6 @@ def get_storage():
 
 if __name__ == '__main__':
     # Initialize state file on startup
-    config_store._init_file()
     state_store._init_file()
 
     STATE_FILE = os.getenv('STATE_FILE', 'household_state_v2.json')

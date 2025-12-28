@@ -12,44 +12,6 @@
     }
   ],
   "paths": {
-    "/api/config": {
-      "get": {
-        "summary": "Get task configuration",
-        "responses": {
-          "200": {
-            "description": "Current configuration",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Update task configuration",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Configuration updated"
-          },
-          "400": {
-            "description": "Validation error"
-          }
-        }
-      }
-    },
     "/api/state": {
       "get": {
         "summary": "Get application state",
