@@ -151,7 +151,7 @@ def static_files(filename):
 
 @app.route('/api/state', methods=['GET'])
 def get_state():
-    """Get current application state"""
+    """Get current application state, which combines task state and allowance settings"""
     try:
         state = state_store.load()
 

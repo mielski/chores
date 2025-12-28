@@ -37,17 +37,17 @@
         >
           <ul class="nav nav-pills mb-0" id="ex1" role="tablist">
             <li
-              class="nav-item border-1 rounded-1 border-info me-3"
+              class="nav-item bg-light border border-dark-subtle rounded-2 me-3"
               role="presentation"
             >
               <a
                 data-bs-toggle="tab"
-                data-bs-target="#ex1-pills-1"
+                data-bs-target="#pane-tasks"
                 class="nav-link active"
-                id="ex1-tab-1"
-                href="#ex1-pills-1"
+                id="tab-tasks"
+                href="#pane-tasks"
                 role="tab"
-                aria-controls="ex1-pills-1"
+                aria-controls="pane-tasks"
                 aria-selected="true"
                 >📋 Taakjes</a
               >
@@ -58,12 +58,12 @@
             >
               <a
                 data-bs-toggle="tab"
-                data-bs-target="#ex1-pills-2"
+                data-bs-target="#pane-allowance"
                 class="nav-link"
-                id="ex1-tab-2"
-                href="#ex1-pills-2"
+                id="tab-allowance"
+                href="#pane-allowance"
                 role="tab"
-                aria-controls="ex1-pills-2"
+                aria-controls="pane-allowance"
                 aria-selected="false"
                 >🪙 Zakgeld</a
               >
@@ -75,7 +75,7 @@
               <a
                 data-toggle="tab"
                 class="nav-link"
-                id="ex1-tab-3"
+                id="tab-settings"
                 href="#ex1-pills-3"
                 role="tab"
                 aria-controls="ex1-pills-3"
@@ -85,7 +85,7 @@
             </li>
           </ul>
 
-          <div class="dropdown ms-md-auto">
+          <div class="dropdown ms-md-auto allowance-view-dropdown-container">
             <button
               class="btn btn-sm btn-outline-secondary dropdown-toggle"
               type="button"
@@ -133,14 +133,14 @@
       <!-- Pills navs -->
 
       <!-- Pills content -->
-      <div class="tab-content" id="ex1-content">
+      <div class="tab-content" id="task-content">
         <div
           class="tab-pane fade show active"
-          id="ex1-pills-1"
+          id="pane-tasks"
           role="tabpanel"
-          aria-labelledby="ex1-tab-1"
+          aria-labelledby="tab-tasks"
         >
-          <div class="tab-pane fade show active" id="ex1-pills-1">
+          <div class="tab-pane fade show active">
             <!-- Pane-specific toolbar -->
             <div
               class="d-flex justify-content-end justify-content-lg-between align-items-center mb-3 p-2 bg-light rounded"
@@ -148,7 +148,7 @@
               <p class="h5 mb-0 d-none d-lg-block">Weektaakjes</p>
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-outline-warning" id="reset-tasks">
-                  <i class="fas fa-undo me-1"></i>Reset
+                  <i class="fas fa-trash me-1"></i>Reset
                 </button>
                 <button class="btn btn-outline-success" id="end-week-tasks">
                   <i class="fas fa-calendar-check me-1"></i>Einde Week
@@ -158,7 +158,7 @@
                   id="undo-tasks"
                   disabled
                 >
-                  <i class="fas fa-undo me-1"></i>Ongedaan maken
+                  <i class="fas fa-arrow-left me-1"></i>Ongedaan maken
                 </button>
               </div>
             </div>
@@ -256,9 +256,9 @@
         </div>
         <div
           class="tab-pane fade"
-          id="ex1-pills-2"
+          id="pane-allowance"
           role="tabpanel"
-          aria-labelledby="ex1-tab-2"
+          aria-labelledby="tab-allowance"
         >
           <div class="row justify-content-center">
             <div class="col-lg-10">
@@ -444,7 +444,7 @@
           class="tab-pane fade"
           id="ex1-pills-3"
           role="tabpanel"
-          aria-labelledby="ex1-tab-3"
+          aria-labelledby="tab-settings"
         >
           Tab 3 content
         </div>

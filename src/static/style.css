@@ -54,7 +54,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  /* border-radius: 999px; */
 }
 
 .allowance-card {
