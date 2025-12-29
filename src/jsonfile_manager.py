@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Tuple, Optional
 import uuid
+import threading
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -139,6 +140,11 @@ class FileAllowanceRepository:
 
     def __init__(self, store: FileAllowanceStore):
         self.store = store
+        # Simple in-process re-entrant lock to guard read-modify-write
+        # sequences on the JSON file. This prevents overlapping writes
+        # from concurrent Flask requests, which can corrupt the file or
+        # cause lost updates.
+        self._lock = threading.RLock()
 
     def _ensure_user(self, data: dict, user_id: str) -> None:
         if user_id not in data:
@@ -171,15 +177,20 @@ class FileAllowanceRepository:
             account["id"] = f"account#{user_id}"
 
     def get_account(self, user_id: str) -> dict:
-        data = self.store.load()
-        self._ensure_user(data, user_id)
-        self.store.save(data)
-        return data[user_id]["account"]
+        with self._lock:
+            data = self.store.load()
+            self._ensure_user(data, user_id)
+            # Persist any structural fixes (e.g. missing id) before returning
+            self.store.save(data)
+            return data[user_id]["account"]
 
     def get_recent_transactions(self, user_id: str, limit: int = 20) -> List[Dict]:
-        data = self.store.load()
-        self._ensure_user(data, user_id)
-        transactions = data[user_id]["transactions"]
+        # Reading transactions can safely share the same lock so that we
+        # never read while another thread is midway through a write.
+        with self._lock:
+            data = self.store.load()
+            self._ensure_user(data, user_id)
+            transactions = data[user_id]["transactions"]
 
         # Sort newest first by timestamp when available
         def ts(tx: dict) -> str:
@@ -195,36 +206,37 @@ class FileAllowanceRepository:
         tx_type: str,
         description: Optional[str] = None,
     ) -> Tuple[Dict, Dict]:
-        data = self.store.load()
-        self._ensure_user(data, user_id)
+        with self._lock:
+            data = self.store.load()
+            self._ensure_user(data, user_id)
 
-        account = data[user_id]["account"]
-        old_balance = float(account.get("currentBalance", 0.0))
-        new_balance = old_balance + float(amount)
+            account = data[user_id]["account"]
+            old_balance = float(account.get("currentBalance", 0.0))
+            new_balance = old_balance + float(amount)
 
-        now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(timezone.utc).isoformat()
 
-        tx_doc: dict = {
-            "id": f"tx#{user_id}#{uuid.uuid4()}",
-            "entityType": "transaction",
-            "userId": user_id,
-            "timestamp": now,
-            "amount": float(amount),
-            "direction": "credit" if amount >= 0 else "debit",
-            "type": tx_type,
-            "description": description,
-            "balanceAfter": new_balance,
-        }
+            tx_doc: dict = {
+                "id": f"tx#{user_id}#{uuid.uuid4()}",
+                "entityType": "transaction",
+                "userId": user_id,
+                "timestamp": now,
+                "amount": float(amount),
+                "direction": "credit" if amount >= 0 else "debit",
+                "type": tx_type,
+                "description": description,
+                "balanceAfter": new_balance,
+            }
 
-        data[user_id]["transactions"].append(tx_doc)
+            data[user_id]["transactions"].append(tx_doc)
 
-        account["currentBalance"] = new_balance
-        account["lastUpdated"] = now
-        account["version"] = int(account.get("version", 1)) + 1
+            account["currentBalance"] = new_balance
+            account["lastUpdated"] = now
+            account["version"] = int(account.get("version", 1)) + 1
 
-        self.store.save(data)
-        logger.info(f"Allowance transaction stored in file backend for {user_id}")
-        return account, tx_doc
+            self.store.save(data)
+            logger.info(f"Allowance transaction stored in file backend for {user_id}")
+            return account, tx_doc
 
     def update_settings(self, user_id: str, new_settings: dict, replace: bool = False) -> dict:
         """Update account-level settings for a user and return the updated account.
@@ -234,23 +246,24 @@ class FileAllowanceRepository:
             new_settings: Dict of settings to update
             replace: If True, replace existing settings entirely; if False, update selectively.
         """
-        data = self.store.load()
-        self._ensure_user(data, user_id)
+        with self._lock:
+            data = self.store.load()
+            self._ensure_user(data, user_id)
 
-        account = data[user_id]["account"]
-        if replace:
-            account["settings"] = new_settings
-        else:
-            settings = account.setdefault("settings", {})
-            settings.update(new_settings)
+            account = data[user_id]["account"]
+            if replace:
+                account["settings"] = new_settings
+            else:
+                settings = account.setdefault("settings", {})
+                settings.update(new_settings)
 
-        now = datetime.now(timezone.utc).isoformat()
-        account["lastUpdated"] = now
-        account["version"] = int(account.get("version", 1)) + 1
+            now = datetime.now(timezone.utc).isoformat()
+            account["lastUpdated"] = now
+            account["version"] = int(account.get("version", 1)) + 1
 
-        self.store.save(data)
-        logger.info(f"Allowance settings updated in file backend for {user_id}")
-        return account
+            self.store.save(data)
+            logger.info(f"Allowance settings updated in file backend for {user_id}")
+            return account
     
     
     def delete_last_transaction(self, user_id: str) -> Tuple[Dict, Dict]:
@@ -260,29 +273,29 @@ class FileAllowanceRepository:
 
         If no transactions exist, an empty dict is returned for deleted_transaction.
         """
+        with self._lock:
+            data = self.store.load()
+            self._ensure_user(data, user_id)
 
-        data = self.store.load()
-        self._ensure_user(data, user_id)
-    
-        transactions = data[user_id]["transactions"]
-        if not transactions:
-            return data[user_id]["account"], {}
+            transactions = data[user_id]["transactions"]
+            if not transactions:
+                return data[user_id]["account"], {}
 
-        last_tx = transactions.pop()
-        amount = last_tx["amount"]
+            last_tx = transactions.pop()
+            amount = last_tx["amount"]
 
-        account = data[user_id]["account"]
-        old_balance = float(account.get("currentBalance", 0.0))
-        new_balance = old_balance - float(amount)
+            account = data[user_id]["account"]
+            old_balance = float(account.get("currentBalance", 0.0))
+            new_balance = old_balance - float(amount)
 
-        account["currentBalance"] = new_balance
-        now = datetime.now(timezone.utc).isoformat()
-        account["lastUpdated"] = now
-        account["version"] = int(account.get("version", 1)) + 1
+            account["currentBalance"] = new_balance
+            now = datetime.now(timezone.utc).isoformat()
+            account["lastUpdated"] = now
+            account["version"] = int(account.get("version", 1)) + 1
 
-        self.store.save(data)
-        logger.info(f"Deleted last transaction for {user_id} in file backend")
-        return account, last_tx
+            self.store.save(data)
+            logger.info(f"Deleted last transaction for {user_id} in file backend")
+            return account, last_tx
 
 
 def create_file_allowance_repository() -> FileAllowanceRepository:

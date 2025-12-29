@@ -206,7 +206,8 @@ class App {
 
     // events for buttons in the task toolbar
     const buttonReset = document.getElementById("reset-tasks");
-    const buttonEndWeek = document.getElementById("end-week-tasks");
+    const buttonEndWeekTasks = document.getElementById("end-week-tasks");
+    const buttonEndWeekAllowance = document.getElementById("end-week-allowance");
     this.buttonUndo = document.getElementById("undo-tasks");
 
     buttonReset.addEventListener("click", async () => {
@@ -219,39 +220,48 @@ class App {
       this.updateWidgets();
     });
 
-    buttonEndWeek.addEventListener("click", async () => {
-      await handleEndWeek();
-    });
+    buttonEndWeekTasks.addEventListener("click", this.#eventEndWeek.bind(this));
+    buttonEndWeekAllowance.addEventListener("click", this.#eventEndWeek.bind(this));
 
     this.buttonUndo.addEventListener("click", () => {
       this.undoLastChange();
     });
 
-    const processButton = document.querySelector(".allowance-toolbar__process");
-    processButton.addEventListener("click", async () => {
-      return fetch("/api/end-week", {
-        method: "POST"
-      })
-      .then((response) => response.json())
-      .then(async (result) => {
-        if (!result.success) {
-          console.warn("Failed to process week:", result.error);
-          showError("Failed to process week: " + result.error);
-          return;
-        }
-        showSuccess("Week succesvol verwerkt!", "Weekverwerking");
-        this.state = await this.getStateFromBackend();
-        this.previousStates = [this.state];
-        this.updateWidgets();
-        allowanceManagers.forEach((m) => m.refreshFromServer());
-        
-      })
-      .catch((error) => {
-        console.error("Error processing week:", error);
-        showError("Error processing week:", error);
-      });
+  }
+
+  async #eventEndWeek() {
+    // Handle end of week button click
+
+    // security check
+    if (!(await verifyPasscodeWithPrompt())) {
+      return;
+    }
     
+    // Call backend API to process end of week
+    return fetch("/api/end-week", {
+      method: "POST"
+    })
+    .then((response) => response.json())
+    .then(async (result) => {
+      if (!result.success) {
+        console.warn("Failed to process week:", result.error);
+        showError("Failed to process week: " + result.error);
+        return;
+      }
+
+      // Show success message and update state
+      showSuccess("Week succesvol verwerkt!", "Weekverwerking");
+      this.state = await this.getStateFromBackend();
+      this.previousStates = [this.state];
+      this.updateWidgets();
+      allowanceManagers.forEach((m) => m.refreshFromServer());
+      
+    })
+    .catch((error) => { 
+      console.error("Error processing week:", error);
+      showError("Error processing week:", error);
     });
+  
   }
 
   // Updates app state from the backend
