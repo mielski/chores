@@ -14,15 +14,19 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
 
-from storage_factory import create_storage_managers, get_storage_info, create_allowance_repository
+from storage_factory import create_state_store, get_storage_info, create_allowance_repository
 from allowance_api import allowance_bp
 
 # Constants for environment variable keys
 APP_USERNAME = 'APP_USERNAME'
 APP_PASSWORD = 'APP_PASSWORD'
+APP_ACTION_PASSCODE = 'APP_ACTION_PASSCODE'
 
 # Load environment variables from .env file
 load_dotenv()
+
+
+APP_VERSION = os.getenv('APP_VERSION', 'dev')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,10 +34,14 @@ logger = logging.getLogger(__name__)
 logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
 
 # Initialize storage managers using factory method
-config_store, state_store = create_storage_managers(user_id="household2")
+state_store = create_state_store(user_id="household2")
 allowance_repository = create_allowance_repository(user_id="Milou")
 
+# Initialize app & secrets
 app = Flask(__name__)
+# Configuration
+
+
 app.config["SECRET_KEY"] = os.getenv('SECRET')
 try:
     app.config[APP_USERNAME] = os.environ[APP_USERNAME]
@@ -41,6 +49,11 @@ try:
 except KeyError as e:
     logger.error(f"No username and/or password environment variables found, terminating application")
     exit(1)
+
+# Optional extra passcode for sensitive actions
+app.config[APP_ACTION_PASSCODE] = os.getenv(APP_ACTION_PASSCODE)
+if not app.config[APP_ACTION_PASSCODE]:
+    logger.info("No ACTION_PASSCODE configured; passcode verification endpoint will always succeed.")
 CORS(app)
 
 # add allowance API blueprint
@@ -76,12 +89,6 @@ def load_user(user_id):
     if user_id == app.config[APP_USERNAME]:
         return User(id=user_id)
     return None
-
-# Configuration
-STATE_FILE = os.getenv('STATE_FILE', 'household_state_v2.json')
-PORT = int(os.getenv('PORT', 8080))
-DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
-APP_VERSION = os.getenv('APP_VERSION', 'dev')
 
 
 class LoginForm(FlaskForm):
@@ -142,72 +149,9 @@ def static_files(filename):
     """Serve static files (CSS, JS, etc.)"""
     return send_from_directory('static', filename)
 
-# API Endpoints
-@app.route('/api/config', methods=['GET'])
-@login_required
-def get_config():
-    """Get current task configuration"""
-    try:
-        config = config_store.load()
-        return jsonify({
-            'success': True,
-            'data': config
-        })
-    except Exception as e:
-        logger.error(f"Error getting config: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/api/config', methods=['POST'])
-@login_required
-def update_config():
-    """Update task configuration"""
-    try:
-        new_config = request.get_json()
-        
-        if not new_config:
-            return jsonify({
-                'success': False,
-                'error': 'No data provided'
-            }), 400
-        
-        # Validate config structure (basic validation)
-        required_keys = ['users', 'generalTasks', 'personalTasks']
-        if not all(key in new_config for key in required_keys):
-            return jsonify({
-                'success': False,
-                'error': f'Missing required keys. Expected: {required_keys}'
-            }), 400
-        
-        # Save new configuration
-        success = config_store.save(new_config)
-        
-        if success:
-            # Reset task state in case the number of tasks/users changed and state is now inconsistent
-            state_store.reset()
-            
-            return jsonify({
-                'success': True,
-                'message': 'Configuration updated successfully'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to save configuration'
-            }), 500
-
-    except Exception as e:
-        logger.error(f"Error updating config: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
 @app.route('/api/state', methods=['GET'])
 def get_state():
-    """Get current application state"""
+    """Get current application state, which combines task state and allowance settings"""
     try:
         state = state_store.load()
 
@@ -288,6 +232,56 @@ def reset_state():
             'success': False,
             'error': str(e)
         }), 500
+    
+@app.route('/api/end-week', methods=['POST'])
+def end_week():
+    """ends the week and performs necessary state updates:
+    - resets weekly tasks
+    - updates allowance balances with weekly allowance amounts + bonuses
+    """
+
+    repo = app.config["ALLOWANCE_REPOSITORY"]
+    if not repo:
+        return jsonify({
+            'success': False,
+            'error': 'Allowance repository not configured'
+        }), 500
+    
+    state = state_store.load()
+    for user_id, user_state in state.items():
+        account = repo.get_account(user_id)
+        
+        # get weekly allowance and bonus settings
+        weekly_allowance = float(account["settings"].get("weeklyAllowance", 0))
+        bonus_per_extra_task = float(account["settings"].get("bonusPerExtraTask", 0))
+        tasks_per_week = int(account["settings"].get("tasksPerWeek", 1))
+        maximum_extra_tasks = int(account["settings"].get("maximumExtraTasks", 0))
+
+        # add weekly allowance transaction
+        repo.add_transaction(
+            user_id=user_id,
+            amount=weekly_allowance,
+            description="zakgeld",
+            tx_type="ALLOWANCE")
+        
+        # calculate and add bonus for extra tasks
+        tasks_completed = len(user_state.get("choreList", []))
+        extra_tasks_completed = min(max(0, tasks_completed - tasks_per_week), maximum_extra_tasks)
+        if extra_tasks_completed:
+            repo.add_transaction(
+                user_id=user_id,
+                amount=extra_tasks_completed * bonus_per_extra_task,
+                description="bonus voor extra taakjes",
+                tx_type="BONUS"
+            )
+    
+    # reset task state when done
+    state_store.reset()
+    return jsonify({
+        'success': True,
+        'message': 'Week ended successfully. State reset and allowances updated.'
+    }), 200
+
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -304,6 +298,44 @@ def get_version():
         'version': APP_VERSION
     })
 
+
+@app.route('/api/verify-passcode', methods=['POST'])
+@login_required
+def verify_passcode():
+    """Verify a simple action passcode against an environment variable.
+
+    The expected JSON body is: {"code": "..."}.
+
+    If ACTION_PASSCODE is not configured in the environment, verification
+    always succeeds so the feature can be considered disabled.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        provided_code = str(data.get('code', ''))
+
+        configured_code = app.config.get(APP_ACTION_PASSCODE)
+
+        # If no passcode configured, treat verification as always successful
+        if not configured_code:
+            return jsonify({
+                'success': True,
+                'valid': True,
+                'configured': False
+            }), 200
+
+        is_valid = provided_code == configured_code
+        return jsonify({
+            'success': True,
+            'valid': is_valid,
+            'configured': True
+        }), 200
+    except Exception as e:
+        logger.error(f"Error verifying passcode: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to verify passcode'
+        }), 500
+
 @app.route('/api/storage', methods=['GET'])
 @login_required  # Add authentication requirement
 def get_storage():
@@ -317,8 +349,11 @@ def get_storage():
 
 if __name__ == '__main__':
     # Initialize state file on startup
-    config_store._init_file()
     state_store._init_file()
+
+    STATE_FILE = os.getenv('STATE_FILE', 'household_state_v2.json')
+    PORT = int(os.getenv('PORT', 8080))
+    DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
     logger.info(f"Starting Flask app on port {PORT}")
     logger.info(f"Debug mode: {DEBUG}")

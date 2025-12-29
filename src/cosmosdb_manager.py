@@ -74,81 +74,6 @@ class CosmosDBManager:
         logger.info(f"Cosmos DB manager initialized for database: {self.database_name}")
 
 
-class CosmosConfigStore:
-    """
-    Manages app configuration using Cosmos DB.
-    Compatible interface with FileConfigStore.
-    """
-    
-    def __init__(self, cosmos_manager: CosmosDBManager, user_id: str = "default"):
-        """
-        Args:
-            cosmos_manager: Initialized CosmosDBManager instance
-            user_id: Partition key for data isolation (default: "default")
-        """
-        self.cosmos = cosmos_manager
-        self.user_id = user_id
-        self.container = cosmos_manager.config_container
-        self.doc_id = "config"
-        
-        self.default_content = {
-            "users": {},
-            "generalTasks": [],
-            "personalTasks": [],
-            "messages": []
-        }
-    
-    def load(self) -> Dict[str, Any]:
-        """Load configuration from Cosmos DB"""
-        try:
-            item = self.container.read_item(
-                item=self.doc_id,
-                partition_key=self.user_id
-            )
-            logger.info(f"Configuration loaded from Cosmos DB")
-            return item.get('data', self.default_content)
-        except exceptions.CosmosResourceNotFoundError:
-            logger.info("Configuration not found in Cosmos DB, initializing with defaults")
-            return self._init_file()
-        except Exception as e:
-            logger.error(f"Error loading configuration from Cosmos DB: {e}")
-            return self.default_content
-    
-    def _init_file(self) -> Dict[str, Any]:
-        """Initialize Cosmos DB document with default values"""
-        try:
-            item = {
-                "id": self.doc_id,
-                "userId": self.user_id,
-                "data": self.default_content
-            }
-            self.container.upsert_item(item)
-            logger.info("Configuration initialized in Cosmos DB with default values")
-            return self.default_content
-        except Exception as e:
-            logger.error(f"Error initializing configuration in Cosmos DB: {e}")
-            return self.default_content
-    
-    def save(self, data: Dict[str, Any]) -> bool:
-        """Save configuration to Cosmos DB"""
-        try:
-            item = {
-                "id": self.doc_id,
-                "userId": self.user_id,
-                "data": data
-            }
-            self.container.upsert_item(item)
-            logger.info("Configuration saved to Cosmos DB")
-            return True
-        except Exception as e:
-            logger.error(f"Error saving configuration to Cosmos DB: {e}")
-            return False
-    
-    def reset(self):
-        """Reset configuration to default values"""
-        self.save(self.default_content.copy())
-
-
 class CosmosStateStore:
     """
     Manages task completion state using Cosmos DB.
@@ -217,7 +142,7 @@ class CosmosStateStore:
         return state
 
 
-def create_cosmos_stores(user_id: str = "default"):
+def create_cosmos_store(user_id: str = "default"):
     """
     Factory function to create Cosmos DB stores.
     
@@ -225,18 +150,16 @@ def create_cosmos_stores(user_id: str = "default"):
         user_id: Partition key for data isolation
         
     Returns:
-        Tuple of (config_store, state_store)
+        state_store: CosmosStateStore instance
         
     Raises:
         ImportError: If azure-cosmos is not installed
         ValueError: If Cosmos DB credentials are not configured
     """
     cosmos_manager = CosmosDBManager()
-    config_store = CosmosConfigStore(cosmos_manager, user_id)
     state_store = CosmosStateStore(cosmos_manager, user_id)
     
-    return config_store, state_store
-
+    return state_store
 
 class CosmosAllowanceRepository:
     """Allowance repository implementation backed by Azure Cosmos DB.
@@ -399,7 +322,7 @@ class CosmosAllowanceRepository:
         If no transactions exist, an empty dict is returned for deleted_transaction.
         """
         account = self.get_account(user_id)
-        transaction = self.container.query_items(
+        transactions = self.container.query_items(
             query=(
                 "SELECT TOP 1 * FROM c "
                 "WHERE c.entityType = 'transaction' AND c.userId = @userId "
@@ -408,10 +331,11 @@ class CosmosAllowanceRepository:
             parameters=[{"name": "@userId", "value": user_id}],
             enable_cross_partition_query=False,
         )
-        if not transaction:
+        if not transactions:
             return account, {}
 
         # get the transaction value
+        transaction = transactions.next()
         amount = transaction['amount']
         old_balance = float(account.get("currentBalance", 0.0))
         new_balance = old_balance - float(amount)

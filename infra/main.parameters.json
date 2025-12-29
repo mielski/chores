@@ -16,6 +16,8 @@
     },
     "appPassword": {
       "value": "${APP_PASSWORD}"
-    }
+    },
+    "actionPassCode": {
+      "value": "${ACTION_PASS_CODE}"
   }
 }

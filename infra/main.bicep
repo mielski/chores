@@ -216,6 +216,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           identity: 'system'
         }
         {
+          name: 'app-action-passcode'
+          keyVaultUrl: '${KeyVault.properties.vaultUri}secrets/appActionPasscode'
+          identity: 'system'
+        }
+        {
           name: 'app-username'
           keyVaultUrl: '${KeyVault.properties.vaultUri}secrets/appUsername'
           identity: 'system'

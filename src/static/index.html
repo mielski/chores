@@ -32,169 +32,417 @@
 
       <!-- Pills navs -->
       <div class="col-8 col-md mb-5 mx-auto">
-        <ul class="nav nav-pills mb-3" id="ex1" role="tablist">
-          <li
-            class="nav-item border-1 rounded-1 border-info me-3"
-            role="presentation"
-          >
-            <a
-              data-bs-toggle="tab"
-              data-bs-target="#ex1-pills-1"
-              class="nav-link active"
-              id="ex1-tab-1"
-              href="#ex1-pills-1"
-              role="tab"
-              aria-controls="ex1-pills-1"
-              aria-selected="true"
-              >📋 Taakjes</a
+        <div
+          class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2"
+        >
+          <ul class="nav nav-pills mb-0" id="ex1" role="tablist">
+            <li
+              class="nav-item bg-light border border-dark-subtle rounded-2 me-3"
+              role="presentation"
             >
-          </li>
-          <li
-            class="nav-item bg-light border border-dark-subtle rounded-2 me-3"
-            role="presentation"
-          >
-            <a
-              data-bs-toggle="tab"
-              data-bs-target="#ex1-pills-2"
-              class="nav-link"
-              id="ex1-tab-2"
-              href="#ex1-pills-2"
-              role="tab"
-              aria-controls="ex1-pills-2"
-              aria-selected="false"
-              >🪙 Zakgeld</a
+              <a
+                data-bs-toggle="tab"
+                data-bs-target="#pane-tasks"
+                class="nav-link active"
+                id="tab-tasks"
+                href="#pane-tasks"
+                role="tab"
+                aria-controls="pane-tasks"
+                aria-selected="true"
+                >📋 Taakjes</a
+              >
+            </li>
+            <li
+              class="nav-item bg-light border border-dark-subtle rounded-2 me-3"
+              role="presentation"
             >
-          </li>
-          <li
-            class="nav-item bg-light border border-dark-subtle rounded-2 me-3"
-            role="presentation"
-          >
-            <a
-              data-toggle="tab"
-              class="nav-link"
-              id="ex1-tab-3"
-              href="#ex1-pills-3"
-              role="tab"
-              aria-controls="ex1-pills-3"
-              aria-selected="false"
-              >⚙️ Instellingen</a
+              <a
+                data-bs-toggle="tab"
+                data-bs-target="#pane-allowance"
+                class="nav-link"
+                id="tab-allowance"
+                href="#pane-allowance"
+                role="tab"
+                aria-controls="pane-allowance"
+                aria-selected="false"
+                >🪙 Zakgeld</a
+              >
+            </li>
+            <li
+              class="nav-item bg-light border border-dark-subtle rounded-2 me-3"
+              role="presentation"
             >
-          </li>
-        </ul>
+              <a
+                data-bs-toggle="tab"
+                data-bs-target="#pane-settings"
+                class="nav-link"
+                id="tab-settings"
+                href="#pane-settings"
+                role="tab"
+                aria-controls="pane-settings"
+                aria-selected="false"
+                >⚙️ Instellingen</a
+              >
+            </li>
+          </ul>
+
+          <div class="dropdown ms-md-auto allowance-view-dropdown-container">
+            <button
+              class="btn btn-sm btn-outline-secondary dropdown-toggle"
+              type="button"
+              id="allowance-view-dropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              Weergave: Alle
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="allowance-view-dropdown"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  type="button"
+                  data-allowance-view="all"
+                >
+                  Alle
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  type="button"
+                  data-allowance-view="Milou"
+                >
+                  Alleen Milou
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  type="button"
+                  data-allowance-view="Luca"
+                >
+                  Alleen Luca
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
       <!-- Pills navs -->
 
       <!-- Pills content -->
-      <div class="tab-content" id="ex1-content">
+      <!-- tasks tab -->
+      <div class="tab-content" id="task-content">
         <div
           class="tab-pane fade show active"
-          id="ex1-pills-1"
+          id="pane-tasks"
           role="tabpanel"
-          aria-labelledby="ex1-tab-1"
+          aria-labelledby="tab-tasks"
         >
-          <div class="tab-pane fade show active" id="ex1-pills-1">
-            <!-- Pane-specific toolbar -->
-            <div
-              class="d-flex justify-content-end justify-content-lg-between align-items-center mb-3 p-2 bg-light rounded"
-            >
-              <p class="h5 mb-0 d-none d-lg-block">Weektaakjes</p>
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-warning" id="reset-tasks">
-                  <i class="fas fa-undo me-1"></i>Reset
+        <div class="row justify-content-center">
+          <div class="col-lg-10">
+              <!-- Pane-specific toolbar -->
+              <div class="task-toolbar d-flex justify-content-end mb-3">
+                <button class="btn btn-outline-warning  me-2" id="reset-tasks">
+                  <i class="fas fa-trash me-1"></i>Reset
                 </button>
-                <button class="btn btn-outline-success" id="end-week-tasks">
+                <button class="btn btn-outline-success me-2" id="end-week-tasks">
                   <i class="fas fa-calendar-check me-1"></i>Einde Week
                 </button>
-                <button class="btn btn-outline-primary" id="undo-tasks" disabled>
-                  <i class="fas fa-undo me-1"></i>Ongedaan maken
+                <button
+                  class="btn btn-outline-primary"
+                  id="undo-tasks"
+                  disabled
+                >
+                  <i class="fas fa-arrow-left me-1"></i>Ongedaan maken
                 </button>
               </div>
+            
+              <div class="row g-3 justify-content-center">
+                <!-- Pane-specific content -->
+                <div class="col-md-6">
+                  <div class="card shadow">
+                    <div class="user-card card-body" data-user="Luca">
+                      <h5
+                        class="user-card__title card-title text-dark d-flex align-items-center"
+                      >
+                        Luca
+                      </h5>
+                      <div
+                        class="d-flex align-items-center gap-2 text-muted mt-2"
+                      >
+                        <i class="fas fa-bullseye me-1" aria-hidden="true"></i>
+                        <span class="user-card__chore-count"
+                          >0 / 7 taakjes</span
+                        >
+                      </div>
+                      <div class="mt-3">
+                        <div class="progress mb-2" style="height: 12px">
+                          <div
+                            class="progress-bar user-card__progress"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                        <p class="small text-muted mt-2 user-card__remaining">
+                          nog 7 te gaan
+                        </p>
+                      </div>
+                      <div class="mt-3">
+                        <div class="d-flex gap-2 mb-3">
+                          <input
+                            class="form-control form-control-sm flex-fill user-card__new-chore-input"
+                            placeholder="Add a chore..."
+                            value=""
+                          />
+                          <button
+                            class="btn btn-primary btn-sm flex-shrink-0 user-card__new-chore-button"
+                          >
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                        <div
+                          class="chore-list"
+                          style="max-height: 300px; overflow-y: auto"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card shadow">
+                    <div class="user-card card-body" data-user="Milou">
+                      <h5 class="user-card__title card-title text-dark">
+                        Milou
+                      </h5>
+                      <div
+                        class="d-flex align-items-center gap-2 text-muted mt-2"
+                      >
+                        <i class="fas fa-bullseye me-1" aria-hidden="true"></i>
+                        <span class="user-card__chore-count"
+                          >0 / 7 taakjes</span
+                        >
+                      </div>
+                      <div class="mt-3">
+                        <div class="progress mb-2" style="height: 12px">
+                          <div
+                            class="user-card__progress progress-bar"
+                            style="width: 0%"
+                          ></div>
+                        </div>
+                        <p class="user-card__remaining small text-muted mt-2">
+                          nog 7 te gaan
+                        </p>
+                      </div>
+                      <div class="mt-3">
+                        <div class="d-flex gap-2 mb-3">
+                          <input
+                            class="form-control form-control-sm flex-fill user-card__new-chore-input"
+                            placeholder="Add a chore..."
+                            value=""
+                          /><button
+                            class="btn btn-primary btn-sm flex-shrink-0 user-card__new-chore-button"
+                          >
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                        <div
+                          class="chore-list"
+                          style="max-height: 300px; overflow-y: auto"
+                        >
+                          <p class="small text-muted text-center py-4">
+                            nog geen taakjes
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <!-- Your existing content -->
           </div>
+        </div>
+        <!-- allowance tab -->
+        <div
+          class="tab-pane fade"
+          id="pane-allowance"
+          role="tabpanel"
+          aria-labelledby="tab-allowance"
+        >
           <div class="row justify-content-center">
-            <div class="col-md-8 col-lg mb-2 mx-2">
-              <div class="card shadow">
-                <div class="user-card card-body" data-user="Luca">
-                  <h3
-                    class="user-card__title card-title text-dark d-flex align-items-center"
-                  >
-                    Luca
-                  </h3>
-                  <div class="d-flex align-items-center gap-2 text-muted mt-2">
-                    <i class="fas fa-bullseye me-1" aria-hidden="true"></i>
-                    <span class="user-card__chore-count">0 / 7 taakjes</span>
-                  </div>
-                  <div class="mt-3">
-                    <div class="progress mb-2" style="height: 12px">
+            <div class="col-lg-10">
+              <div class="allowance-toolbar d-flex justify-content-end mb-3">
+                <button
+                  type="button" 
+                  class="btn btn-outline-success" id="end-week-allowance">
+                  <i class="fas fa-calendar-check me-1"></i>Einde Week
+                </button>
+              </div>
+
+              <div class="row g-3">
+
+                <!-- Luca allowance card -->
+                <div class="col-md-6">
+                  <div class="card shadow allowance-card" data-user="Luca">
+                    <div class="card-body">
                       <div
-                        class="progress-bar user-card__progress"
-                        style="width: 0%"
-                      ></div>
-                    </div>
-                    <p class="small text-muted mt-2 user-card__remaining">
-                      nog 7 te gaan
-                    </p>
-                  </div>
-                  <div class="mt-3">
-                    <div class="d-flex gap-2 mb-3">
-                      <input
-                        class="form-control form-control-sm flex-fill user-card__new-chore-input"
-                        placeholder="Add a chore..."
-                        value=""
-                      />
-                      <button
-                        class="btn btn-primary btn-sm flex-shrink-0 user-card__new-chore-button"
+                        class="d-flex justify-content-between align-items-center mb-2"
                       >
-                        <i class="fas fa-plus" aria-hidden="true"></i>
-                      </button>
+                        <h5 class="card-title mb-0">Luca</h5>
+                        <span
+                          class="badge bg-success-subtle text-success small allowance-card__currency"
+                          >EUR</span
+                        >
+                      </div>
+
+                      <div class="p-3 rounded mb-3 bg-success-subtle">
+                        <p class="mb-1 small text-muted">Huidig saldo</p>
+                        <p
+                          class="mb-0 fw-semibold text-success allowance-card__balance"
+                        >
+                          € 0,00
+                        </p>
+                      </div>
+
+                      <div class="mb-3 allowance-card__weekly">
+                        <div class="d-flex justify-content-between small mb-1">
+                          <span class="text-muted">Zakgeld per week</span>
+                          <span class="text-success allowance-card__weekly-base"
+                            >€ 0,00</span
+                          >
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                          <span class="text-muted">Bonus uit taakjes</span>
+                          <span
+                            class="text-success allowance-card__weekly-bonus"
+                            >€ 0,00</span
+                          >
+                        </div>
+                        <div
+                          class="d-flex justify-content-between pt-2 border-top small fw-semibold"
+                        >
+                          <span>Totaal deze week</span>
+                          <span
+                            class="text-success allowance-card__weekly-total"
+                            >€ 0,00</span
+                          >
+                        </div>
+                      </div>
+
+                      <div class="mb-3 allowance-card__transactions">
+                        <p class="small text-muted mb-1">Laatste transacties</p>
+                        <ul
+                          class="list-unstyled mb-0 allowance-card__transactions-list"
+                        >
+                          <li class="small text-muted fst-italic">
+                            Nog geen transacties
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div class="pt-2 border-top">
+                        <div
+                          class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2"
+                        >
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary allowance-card__add-transaction"
+                          >
+                            <i class="fas fa-plus me-1"></i>Transactie toevoegen
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary allowance-card__undo-transaction"
+                          >
+                            <i class="fas fa-undo me-1"></i>Laatste transactie
+                            ongedaan maken
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div
-                      class="chore-list"
-                      style="max-height: 300px; overflow-y: auto"
-                    ></div>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-8 col-lg mx-2">
-              <div class="card shadow">
-                <div class="user-card card-body" data-user="Milou">
-                  <h3 class="user-card__title card-title text-dark">Milou</h3>
-                  <div class="d-flex align-items-center gap-2 text-muted mt-2">
-                    <i class="fas fa-bullseye me-1" aria-hidden="true"></i>
-                    <span class="user-card__chore-count">0 / 7 taakjes</span>
-                  </div>
-                  <div class="mt-3">
-                    <div class="progress mb-2" style="height: 12px">
+
+                <!-- Milou allowance card -->
+                <div class="col-md-6">
+                  <div class="card shadow allowance-card" data-user="Milou">
+                    <div class="card-body">
                       <div
-                        class="user-card__progress progress-bar"
-                        style="width: 0%"
-                      ></div>
-                    </div>
-                    <p class="user-card__remaining small text-muted mt-2">
-                      nog 7 te gaan
-                    </p>
-                  </div>
-                  <div class="mt-3">
-                    <div class="d-flex gap-2 mb-3">
-                      <input
-                        class="form-control form-control-sm flex-fill user-card__new-chore-input"
-                        placeholder="Add a chore..."
-                        value=""
-                      /><button
-                        class="btn btn-primary btn-sm flex-shrink-0 user-card__new-chore-button"
+                        class="d-flex justify-content-between align-items-center mb-2"
                       >
-                        <i class="fas fa-plus" aria-hidden="true"></i>
-                      </button>
-                    </div>
-                    <div
-                      class="chore-list"
-                      style="max-height: 300px; overflow-y: auto"
-                    >
-                      <p class="small text-muted text-center py-4">
-                        No chores yet this week
-                      </p>
+                        <h5 class="card-title mb-0">Milou</h5>
+                        <span
+                          class="badge bg-success-subtle text-success small allowance-card__currency"
+                          >EUR</span
+                        >
+                      </div>
+
+                      <div class="p-3 rounded mb-3 bg-success-subtle">
+                        <p class="mb-1 small text-muted">Huidig saldo</p>
+                        <p
+                          class="mb-0 fw-semibold text-success allowance-card__balance"
+                        >
+                          € 0,00
+                        </p>
+                      </div>
+
+                      <div class="mb-3 allowance-card__weekly">
+                        <div class="d-flex justify-content-between small mb-1">
+                          <span class="text-muted">Zakgeld per week</span>
+                          <span class="text-success allowance-card__weekly-base"
+                            >€ 0,00</span
+                          >
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                          <span class="text-muted">Bonus uit taakjes</span>
+                          <span
+                            class="text-success allowance-card__weekly-bonus"
+                            >€ 0,00</span
+                          >
+                        </div>
+                        <div
+                          class="d-flex justify-content-between pt-2 border-top small fw-semibold"
+                        >
+                          <span>Totaal deze week</span>
+                          <span
+                            class="text-success allowance-card__weekly-total"
+                            >€ 0,00</span
+                          >
+                        </div>
+                      </div>
+
+                      <div class="mb-3 allowance-card__transactions">
+                        <p class="small text-muted mb-1">Laatste transacties</p>
+                        <ul
+                          class="list-unstyled mb-0 allowance-card__transactions-list"
+                        >
+                          <li class="small text-muted fst-italic">
+                            Nog geen transacties
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div class="pt-2 border-top">
+                        <div
+                          class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2"
+                        >
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary allowance-card__add-transaction"
+                          >
+                            <i class="fas fa-plus me-1"></i>Transactie toevoegen
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary allowance-card__undo-transaction"
+                          >
+                            <i class="fas fa-undo me-1"></i>Laatste transactie
+                            ongedaan maken
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -204,50 +452,26 @@
         </div>
         <div
           class="tab-pane fade"
-          id="ex1-pills-2"
+          id="pane-settings"
           role="tabpanel"
-          aria-labelledby="ex1-tab-2"
+          aria-labelledby="tab-settings"
         >
-          Tab 2 content
+        <div class="row justify-content-center">
+          <div class="col-lg-10">
+            <h3>Instellingen</h3>
+            <div class="alert alert-info" role="alert">
+              <i class="fas fa-info-circle me-2"></i>Instellingen kunnen hier
+              worden bekeken. Gebruik voorlopig de
+              <a href="docs" class="alert-link">API Docs</a> om instellingen
+              aan te passen.
+            </div>
+          </div>
         </div>
-        <div
-          class="tab-pane fade"
-          id="ex1-pills-3"
-          role="tabpanel"
-          aria-labelledby="ex1-tab-3"
-        >
-          Tab 3 content
-        </div>
-      </div>
-      <!-- Pills content -->
-      <!-- Tabs content -->
-      <!-- old progress bars
-    <div class="progressholders d-flex flex-column my-3 p-2 border border-1 rounded-1 border-info">
-      <p class="mb-0">Luca</p>
-      <div class="progress mb-2">
-        <div id="progress-luca" class="progress-bar" role="progressbar" style="width: 0%;"
-          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-          Description
-        </div>
-      </div>
-      <p class="mb-0">Milou</p>
-      <div class="progress">
-        <div id="progress-milou" class="progress-bar" role="progressbar" style="width: 0%;"
-          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-          Description
-        </div>
-      </div>
-    </div>
-     -->
-      <div class="main-buttons-control d-flex m-3">
-        <a role="button" class="btn btn-sm btn-secondary me-2" href="/config">
-          ⚙️<span class="visually-hidden">Settings</span>
-        </a>
-        <a role="button" class="btn btn-sm btn-light ms-2" href="/logout">👟</a>
       </div>
       <footer class="text-center text-muted small mt-4 mb-2">
-        <span id="app-version">Loading version...</span> • 
-        <a class="a small" href="docs">API Docs</a>
+        <span id="app-version">Loading version...</span> •
+        <a class="a small" href="docs">API Docs</a> •
+        <a class="a small" href="/logout">Logout</a>
       </footer>
     </div>
 
@@ -273,7 +497,132 @@
         <div class="toast-body" id="toast-message">Default message</div>
       </div>
     </div>
-    <script src="config.js"></script>
+    <!-- Passcode Modal -->
+    <div
+      class="modal fade"
+      id="passcodeModal"
+      tabindex="-1"
+      aria-labelledby="passcodeModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="passcodeModalLabel">
+              Bevestig met toegangscode
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Sluiten"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="passcode-input" class="form-label"
+                >Voer toegangscode in</label
+              >
+              <input
+                type="password"
+                inputmode="numeric"
+                class="form-control"
+                id="passcode-input"
+                autocomplete="off"
+                minlength="4"
+              />
+              <div id="passcode-error" class="form-text text-danger d-none">
+                Onjuiste code, probeer het opnieuw.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Annuleren
+            </button>
+            <button type="button" class="btn btn-primary" id="passcode-confirm">
+              Bevestigen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Transaction Modal -->
+    <div
+      class="modal fade"
+      id="transactionModal"
+      tabindex="-1"
+      aria-labelledby="transactionModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="transactionModalLabel">
+              Transactie toevoegen
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="transactionForm">
+              <input type="hidden" id="transaction-user-id" />
+              <div class="mb-3">
+                <label for="transaction-amount" class="form-label"
+                  >Bedrag</label
+                >
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  id="transaction-amount"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="transaction-type" class="form-label">Type</label>
+                <select class="form-select" id="transaction-type">
+                  <option value="ALLOWANCE">Zakgeld</option>
+                  <option value="BONUS">Bonus</option>
+                  <option value="MANUAL" selected>Handmatig</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="transaction-description" class="form-label"
+                  >Omschrijving</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="transaction-description"
+                  placeholder="Bijvoorbeeld: extra klusje, cadeautje..."
+                />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Annuleren
+            </button>
+            <button type="button" class="btn btn-primary" id="save-transaction">
+              Opslaan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="index.js"></script>
     <script defer>
       // Fetch and display version

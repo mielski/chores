@@ -13,23 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 @runtime_checkable
-class ConfigStoreProtocol(Protocol):
-    """Protocol defining the interface for configuration stores."""
-    
-    def load(self) -> Dict[str, Any]:
-        """Load configuration data."""
-        ...
-    
-    def save(self, data: Dict[str, Any]) -> bool:
-        """Save configuration data. Returns True if successful."""
-        ...
-    
-    def reset(self) -> None:
-        """Reset configuration to default values."""
-        ...
-
-
-@runtime_checkable
 class StateStoreProtocol(Protocol):
     """Protocol defining the interface for state stores."""
     
@@ -103,9 +86,9 @@ class AllowanceRepositoryProtocol(Protocol):
         ...
 
 
-def create_storage_managers(
+def create_state_store(
     user_id: str = "household"
-) -> Tuple[ConfigStoreProtocol, StateStoreProtocol]:
+) -> StateStoreProtocol:
     """
     Factory method to create storage managers with automatic fallback.
     
@@ -116,7 +99,7 @@ def create_storage_managers(
         user_id: User identifier for Cosmos DB partition key
         
     Returns:
-        Tuple of (config_store, state_store) conforming to protocols
+        StateStoreProtocol
         
     Raises:
         ImportError: If required dependencies are missing (after fallback)
@@ -125,16 +108,15 @@ def create_storage_managers(
     
     if use_cosmos:
         try:
-            from cosmosdb_manager import create_cosmos_stores
+            from cosmosdb_manager import create_cosmos_store
             logger.info("Initializing Cosmos DB storage...")
-            config_store, state_store = create_cosmos_stores(user_id=user_id)
+            state_store = create_cosmos_store(user_id=user_id)
             
             # Verify they conform to protocols
-            assert isinstance(config_store, ConfigStoreProtocol)
             assert isinstance(state_store, StateStoreProtocol)
             
             logger.info("✅ Cosmos DB storage initialized successfully")
-            return config_store, state_store
+            return state_store
             
         except ImportError as e:
             logger.error(f"❌ Cosmos DB dependencies missing: {e}")
@@ -146,13 +128,12 @@ def create_storage_managers(
     # Fallback to file-based storage
     logger.info("Using file-based storage")
     try:
-        from jsonfile_manager import state_store, config_store
+        from jsonfile_manager import state_store
         
         # Verify they conform to protocols
-        assert isinstance(config_store, ConfigStoreProtocol)
         assert isinstance(state_store, StateStoreProtocol)
         
-        return config_store, state_store
+        return state_store
         
     except ImportError as e:
         logger.error(f"❌ File-based storage dependencies missing: {e}")
@@ -244,7 +225,7 @@ def get_storage_info(include_sensitive: bool = False) -> Dict[str, Any]:
     
     # Try to determine actual storage being used
     try:
-        config_store, _ = create_storage_managers()
+        config_store, _ = create_state_store()
         
         # Check the actual type (safe to expose)
         from cosmosdb_manager import CosmosConfigStore

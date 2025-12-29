@@ -9,7 +9,6 @@
   --my-milou-color: #0ef706dc;
 }
 
-
 /* Add this CSS to your stylesheet */
 .general-task {
   transition: all 0.3s ease-in-out;
@@ -41,4 +40,43 @@ body {
     right: 0.75rem;
     z-index: 20;
   }
+}
+
+
+.allowance-card {
+  border-radius: 0.75rem;
+}
+
+.allowance-card__balance {
+  font-size: 1.4rem;
+}
+
+.allowance-card__transactions-list li + li {
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  padding-top: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.allowance-card__transactions-list .amount-positive {
+  color: #198754;
+}
+
+.allowance-card__transactions-list .amount-negative {
+  color: #dc3545;
+}
+
+.allowance-card__transactions-list time {
+  white-space: nowrap;
+}
+
+.allowance-card__weekly {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.allowance-card__transactions {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 0.75rem;
+  margin-top: 0.25rem;
 }
