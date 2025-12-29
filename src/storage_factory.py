@@ -108,9 +108,9 @@ def create_state_store(
     
     if use_cosmos:
         try:
-            from cosmosdb_manager import create_cosmos_stores
+            from cosmosdb_manager import create_cosmos_store
             logger.info("Initializing Cosmos DB storage...")
-            state_store = create_cosmos_stores(user_id=user_id)
+            state_store = create_cosmos_store(user_id=user_id)
             
             # Verify they conform to protocols
             assert isinstance(state_store, StateStoreProtocol)

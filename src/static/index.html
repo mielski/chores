@@ -73,12 +73,13 @@
               role="presentation"
             >
               <a
-                data-toggle="tab"
+                data-bs-toggle="tab"
+                data-bs-target="#pane-settings"
                 class="nav-link"
                 id="tab-settings"
-                href="#ex1-pills-3"
+                href="#pane-settings"
                 role="tab"
-                aria-controls="ex1-pills-3"
+                aria-controls="pane-settings"
                 aria-selected="false"
                 >⚙️ Instellingen</a
               >
@@ -133,6 +134,7 @@
       <!-- Pills navs -->
 
       <!-- Pills content -->
+      <!-- tasks tab -->
       <div class="tab-content" id="task-content">
         <div
           class="tab-pane fade show active"
@@ -140,9 +142,9 @@
           role="tabpanel"
           aria-labelledby="tab-tasks"
         >
-          <!-- Pane-specific toolbar -->
-          <div class="row justify-content-center">
-            <div class="col-lg-10">
+        <div class="row justify-content-center">
+          <div class="col-lg-10">
+              <!-- Pane-specific toolbar -->
               <div class="task-toolbar d-flex justify-content-end mb-3">
                 <button class="btn btn-outline-warning  me-2" id="reset-tasks">
                   <i class="fas fa-trash me-1"></i>Reset
@@ -251,7 +253,7 @@
                           style="max-height: 300px; overflow-y: auto"
                         >
                           <p class="small text-muted text-center py-4">
-                            No chores yet this week
+                            nog geen taakjes
                           </p>
                         </div>
                       </div>
@@ -262,6 +264,7 @@
             </div>
           </div>
         </div>
+        <!-- allowance tab -->
         <div
           class="tab-pane fade"
           id="pane-allowance"
@@ -449,42 +452,26 @@
         </div>
         <div
           class="tab-pane fade"
-          id="ex1-pills-3"
+          id="pane-settings"
           role="tabpanel"
           aria-labelledby="tab-settings"
         >
-          Tab 3 content
+        <div class="row justify-content-center">
+          <div class="col-lg-10">
+            <h3>Instellingen</h3>
+            <div class="alert alert-info" role="alert">
+              <i class="fas fa-info-circle me-2"></i>Instellingen kunnen hier
+              worden bekeken. Gebruik voorlopig de
+              <a href="docs" class="alert-link">API Docs</a> om instellingen
+              aan te passen.
+            </div>
+          </div>
         </div>
-      </div>
-      <!-- Pills content -->
-      <!-- Tabs content -->
-      <!-- old progress bars
-    <div class="progressholders d-flex flex-column my-3 p-2 border border-1 rounded-1 border-info">
-      <p class="mb-0">Luca</p>
-      <div class="progress mb-2">
-        <div id="progress-luca" class="progress-bar" role="progressbar" style="width: 0%;"
-          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-          Description
-        </div>
-      </div>
-      <p class="mb-0">Milou</p>
-      <div class="progress">
-        <div id="progress-milou" class="progress-bar" role="progressbar" style="width: 0%;"
-          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-          Description
-        </div>
-      </div>
-    </div>
-     -->
-      <div class="main-buttons-control d-flex m-3">
-        <a role="button" class="btn btn-sm btn-secondary me-2" href="/config">
-          ⚙️<span class="visually-hidden">Settings</span>
-        </a>
-        <a role="button" class="btn btn-sm btn-light ms-2" href="/logout">👟</a>
       </div>
       <footer class="text-center text-muted small mt-4 mb-2">
         <span id="app-version">Loading version...</span> •
-        <a class="a small" href="docs">API Docs</a>
+        <a class="a small" href="docs">API Docs</a> •
+        <a class="a small" href="/logout">Logout</a>
       </footer>
     </div>
 
