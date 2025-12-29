@@ -60,6 +60,39 @@
         }
       }
     },
+    "/api/end-week": {
+      "post": {
+        "summary": "Process end of week tasks and allowances",
+        "description": "Resets weekly tasks and updates allowance balances with weekly allowance amounts and bonuses.",
+        "responses": {
+          "200": {
+            "description": "Week processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  },
+                  "required": ["success", "message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error while processing week",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "summary": "Health check",
@@ -76,6 +109,55 @@
         "responses": {
           "200": {
             "description": "Version information"
+          }
+        }
+      }
+    },
+    "/api/verify-passcode": {
+      "post": {
+        "summary": "Verify action passcode",
+        "description": "Verifies a simple passcode against the configured ACTION_PASSCODE environment variable.",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": { "type": "string" }
+                },
+                "required": ["code"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Passcode verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "valid": { "type": "boolean" },
+                    "configured": { "type": "boolean" }
+                  },
+                  "required": ["success", "valid", "configured"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error verifying passcode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           }
         }
       }
