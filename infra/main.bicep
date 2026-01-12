@@ -13,7 +13,11 @@ param environmentName string = 'dev'
 param location string = resourceGroup().location
 
 @description('Resource token to make resource names unique')
-param resourceToken string = substring(toLower(uniqueString(subscription().id, resourceGroup().id, environmentName)), 0, 8)
+param resourceToken string = substring(
+  toLower(uniqueString(subscription().id, resourceGroup().id, environmentName)),
+  0,
+  8
+)
 
 @description('Full container image name to deploy (e.g. docker.io/username/repo:tag or username/repo:tag)')
 param imageName string = 'mielski/household-web-app:latest'
@@ -197,7 +201,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           allowCredentials: false
         }
         ipSecurityRestrictions: [
-          {action: 'Allow', name: 'AllowHomeNetwork', description: 'Allows access from home network', ipAddressRange: '188.90.180.102'}
+          {
+            action: 'Allow'
+            name: 'AllowHomeNetwork'
+            description: 'Allows access from home network'
+            ipAddressRange: '188.90.180.102'
+          }
         ]
       }
       // For publicly available images on Docker Hub no registry configuration
@@ -258,6 +267,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'APP_PASSWORD'
               secretRef: 'app-password'
+            }
+            {
+              name: 'APP_ACTION_PASSCODE'
+              secretRef: 'app-action-passcode'
             }
             {
               name: 'USE_COSMOS_DB'
