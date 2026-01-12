@@ -69,10 +69,13 @@ export async function verifyPasscodeWithPrompt() {
 
         const json = await res.json();
 
-        // If backend has no passcode configured, verification always succeeds
         if (json.success && json.valid) {
           cleanup();
           modal.hide();
+          // If backend has no passcode configured, verification always succeeds.
+          if (json.configured === false) {
+            console.info("No action passcode configured; verification automatically succeeds.");
+          }
           resolve(true);
         } else if (!json.success) {
           console.error("Passcode verification failed", json.error);
