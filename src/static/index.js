@@ -111,7 +111,7 @@ class ChoreManager {
     this.count = this.currentChores.length;
 
     // update the elements
-    this.elements.counter.textContent = `${this.count} / ${this.choresTarget} chores`;
+    this.elements.counter.textContent = `${this.count} / ${this.choresTarget} taakjes`;
 
     // update progress bar
     const percentage = Math.round(
@@ -126,10 +126,14 @@ class ChoreManager {
     this.elements.progress.style.width = percentage + "%";
 
     // update the remaining tasks element
-    this.elements.remaining.textContent =
-      this.count < this.choresTarget
-        ? `nog ${this.choresTarget - this.count} te gaan`
-        : "allemaal klaar!";
+    let remainingContent;
+    if (this.count < this.choresTarget)
+      remainingContent = `nog ${this.choresTarget - this.count} te gaan`;
+    else if (this.count === this.choresTarget)
+      remainingContent = "allemaal klaar!";
+    else
+      remainingContent = `${this.count - this.choresTarget} bonus taakjes gedaan! 🧡`;
+    this.elements.remaining.textContent = remainingContent;
 
     // update the chore list
     if (this.count === 0) {
@@ -739,23 +743,7 @@ if (saveTxButton) {
     }
   });
 }
-// Handle end of week functionality
-async function handleEndWeek() {
-  try {
-    // Here you can implement week ending logic like:
-    // - Save current week's progress
-    // - Archive completed tasks
-    // - Generate weekly report
-    // - Reset for new week
-    showSuccess("Week ended successfully! Progress saved.", "End of Week");
 
-    // For now, just show a success message
-    // You can expand this functionality later
-  } catch (error) {
-    console.error("Error ending week:", error);
-    showError("Failed to end week. Please try again.", "Error");
-  }
-}
 
 // Confetti utility functions
 function createConfetti(options = {}) {

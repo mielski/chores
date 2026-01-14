@@ -114,23 +114,25 @@ the public docker hub registry.
 
    - Azure subscription
    - Azure CLI installed and logged in
-   - Azure Developer CLI (azd) installed
    - Docker Desktop installed and running
 
 2. **Initialize and Deploy**
 
+   - deploy the infrastructure using the provided script:
    ```bash
-   # Initialize azd (first time only)
-   azd init
-
-   # Deploy to Azure
-   azd up
+   ./deploy-infra.sh
    ```
+   This is a one-time setup to create the necessary Azure resources.
+   
+   - run the bash script to build the docker image, push to docker hub and deploy to Azure:
+   ```bash
+   ./build-and-push.sh
+   ```
+   note: running `bash ./build-and-push.sh` on Windows requires Git Bash or WSL and can lead to
+   issues with line endings. In that case, first open bash shell within powershell and then run the script.
 
-   - Follow the prompts to select the following
-     - resource group and region
-     - app secret, username, and password for authentication
-
+   
+   
 3. **Access the Application**
    - The deployment will provide a public URL
    - Access from any device with internet connection
