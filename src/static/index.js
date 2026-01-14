@@ -538,7 +538,7 @@ class AllowanceManager {
       const date = tx.timestamp ? new Date(tx.timestamp) : null;
       const displayDate = date ? getDisplayDate(date) : "";
 
-      const description = tx.description || tx.type || "Transactie";
+      const description = tx.description || "";
 
       li.innerHTML = `
         <span>
@@ -563,11 +563,13 @@ class AllowanceManager {
     const amountInput = document.getElementById("transaction-amount");
     const typeSelect = document.getElementById("transaction-type");
     const descInput = document.getElementById("transaction-description");
+    const creditRadio = document.getElementById("transaction-direction-incoming");
 
     userInput.value = this.userId;
     amountInput.value = "";
     typeSelect.value = "MANUAL";
     descInput.value = "";
+    creditRadio.checked = true;
 
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
@@ -602,8 +604,16 @@ class AllowanceManager {
     const amountInput = document.getElementById("transaction-amount");
     const typeSelect = document.getElementById("transaction-type");
     const descInput = document.getElementById("transaction-description");
+    const selectedDirectionInput =
+      document.querySelector('input[name="transaction-direction"]:checked');
 
-    const amount = Number(amountInput.value);
+    // note: debit/credit is inverted here because allowance account works oppositely
+    // debit = outgoing money = negative amount
+    // credit = incoming money = positive amount
+    // also, the repository contains a debit/credit field, but that is not used in the API
+    // and only the amount sign matters
+    const amount = Number(amountInput.value) * (selectedDirectionInput?.value === "debit" ? -1 : 1);
+    
     if (!userInput.value || Number.isNaN(amount) || amount === 0) {
       showWarning("Vul een bedrag in om op te slaan.");
       return;

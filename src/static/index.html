@@ -587,6 +587,35 @@
                   required
                 />
               </div>
+
+              <div class="mb-3">
+                <label class="form-label" for="transaction-direction">Bij/Af</label>
+                <div class="form-control">
+                  <div class="form-check-inline">
+                    <input 
+                      class="form-check-input ms-2" 
+                      type="radio" 
+                      name="transaction-direction" 
+                      id="transaction-direction-incoming"
+                      value="credit">
+                    <label class="form-check-label" for="transaction-direction-incoming">
+                      Bij
+                    </label>
+                  </div>
+                  <div class="form-check-inline">
+                    <input 
+                    class="form-check-input" 
+                    type="radio" 
+                    name="transaction-direction" 
+                    id="transaction-direction-outgoing" 
+                    value="debit"
+                    checked>
+                    <label class="form-check-label" for="transaction-direction-outgoing">
+                      Af
+                    </label>
+                  </div>
+                </div>
+              </div>
               <div class="mb-3">
                 <label for="transaction-type" class="form-label">Type</label>
                 <select class="form-select" id="transaction-type">

@@ -317,6 +317,7 @@ def verify_passcode():
 
         # If no passcode configured, treat verification as always successful
         if not configured_code:
+            logging.info("No action passcode configured; verification automatically succeeds.")
             return jsonify({
                 'success': True,
                 'valid': True,
